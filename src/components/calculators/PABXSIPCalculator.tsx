@@ -10,13 +10,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-    Calculator, 
-    Phone, 
-    PhoneForwarded, 
-    Settings, 
-    FileText, 
-    Download, 
+import {
+    Calculator,
+    Phone,
+    PhoneForwarded,
+    Settings,
+    FileText,
+    Download,
     Save,
     Search,
     Edit,
@@ -36,6 +36,8 @@ interface PABXTier {
 }
 
 interface SIPPlan {
+    name: string;
+    type: 'PLANO' | 'TARIFADO';
     setup: number;
     monthly: number;
     channels: number;
@@ -45,7 +47,7 @@ interface PABXResult {
     setup: number;
     baseMonthly: number;
     deviceRentalCost: number;
-    aiAgentCost: number; 
+    aiAgentCost: number;
     totalMonthly: number;
 }
 
@@ -64,7 +66,7 @@ interface Product {
     description: string;
     setup: number;
     monthly: number;
-    details: any; 
+    details: any;
 }
 
 interface Proposal {
@@ -93,6 +95,7 @@ const PABXSIPCalculator: React.FC = () => {
     const [pabxExtensions, setPabxExtensions] = useState<number>(0);
     const [pabxIncludeDevices, setPabxIncludeDevices] = useState<boolean>(false);
     const [pabxDeviceQuantity, setPabxDeviceQuantity] = useState<number>(0);
+    const [pabxIncludeSetup, setPabxIncludeSetup] = useState<boolean>(true);
     const [pabxResult, setPabxResult] = useState<PABXResult | null>(null);
 
     // Estados Agente IA
@@ -103,43 +106,296 @@ const PABXSIPCalculator: React.FC = () => {
     const [selectedSipPlan, setSelectedSipPlan] = useState<string>('');
     const [sipAdditionalChannels, setSipAdditionalChannels] = useState<number>(0);
     const [sipWithEquipment, setSipWithEquipment] = useState<boolean>(false);
+    const [sipIncludeSetup, setSipIncludeSetup] = useState<boolean>(true);
     const [sipResult, setSipResult] = useState<SIPResult | null>(null);
 
-    // Dados das tabelas
-    const pabxTiers: PABXTier[] = [
-        { min: 1, max: 10, setup: 1250, monthly: 200 },
-        { min: 11, max: 20, setup: 2000, monthly: 220 },
-        { min: 21, max: 30, setup: 2500, monthly: 250 },
-        { min: 31, max: 50, setup: 3000, monthly: 300 },
-        { min: 51, max: 100, setup: 3500, monthly: 400 },
-        { min: 101, max: 500, setup: 4000, monthly: 500 },
-        { min: 501, max: 1000, setup: 5000, monthly: 600 }
-    ];
-
-    const deviceRentalTiers = [
-        { min: 1, max: 10, price: 35 },
-        { min: 11, max: 20, price: 34 },
-        { min: 21, max: 30, price: 33 },
-        { min: 31, max: 50, price: 32 },
-        { min: 51, max: 100, price: 30 },
-        { min: 101, max: 500, price: 0 }, // Valor a combinar
-        { min: 501, max: 1000, price: 0 } // Valor a combinar
-    ];
-
-    const aiAgentPlans: { [key: string]: { name: string; monthlyCost: number; messages: string; minutes: string; premiumVoice: string; } } = {
-        '20k': { name: 'Agente IA 20K Créditos', monthlyCost: 720, messages: '10.000 mensagens* ou', minutes: '2.000 minutos** ou', premiumVoice: '1.000 voz premium*** ou' },
-        '40k': { name: 'Agente IA 40K Créditos', monthlyCost: 1370, messages: '20.000 mensagens* ou', minutes: '4.000 minutos** ou', premiumVoice: '2.000 voz premium*** ou' },
-        '60k': { name: 'Agente IA 60K Créditos', monthlyCost: 1940, messages: '30.000 mensagens* ou', minutes: '6.000 minutos** ou', premiumVoice: '3.000 voz premium*** ou' },
-        '100k': { name: 'Agente IA 100K Créditos', monthlyCost: 3060, messages: '50.000 mensagens* ou', minutes: '10.000 minutos** ou', premiumVoice: '5.000 voz premium*** ou' },
-        '150k': { name: 'Agente IA 150K Créditos', monthlyCost: 4320, messages: '75.000 mensagens* ou', minutes: '15.000 minutos** ou', premiumVoice: '7.500 voz premium*** ou' },
-        '200k': { name: 'Agente IA 200K Créditos', monthlyCost: 5400, messages: '100.000 mensagens* ou', minutes: '20.000 minutos** ou', premiumVoice: '10.000 voz premium*** ou' },
+    // Dados para as tabelas de List Price
+    const pabxListPriceData = {
+        headers: ['Serviço', 'Até 10 ramais', 'De 11 a 20 ramais', 'De 21 a 30 ramais', 'De 31 a 50 ramais', 'De 51 a 100 ramais', 'De 101 a 500 ramais', 'De 501 a 1.000 ramais'],
+        rows: [
+            { service: 'Setup (cobrança única)', values: ['1.250,00', '2.000,00', '2.500,00', '3.000,00', '3.500,00', 'Valor a combinar', 'Valor a combinar'] },
+            { service: 'Valor por ramal (mensal unitário)', values: ['30,00', '29,00', '28,00', '27,00', '26,00', '25,00', '24,50'] },
+            { service: 'Valor hospedagem (mensal)', values: ['200,00', '220,00', '250,00', '300,00', '400,00', 'Valor a combinar', 'Valor a combinar'] },
+            { service: 'Aluguel Aparelho Grandstream (mensal)', values: ['35,00', '34,00', '33,00', '32,00', '30,00', 'Valor a combinar', 'Valor a combinar'] },
+        ],
     };
+
+    const sipListPriceData = {
+        headers: {
+            top: [
+                { title: 'SIP TARIFADO', span: 2 },
+                { title: 'SIP TARIFADO', span: 1 },
+                { title: 'SIP TARIFADO', span: 1 },
+                { title: 'SIP TARIFADO', span: 1 },
+                { title: 'SIP TARIFADO', span: 1 },
+                { title: 'SIP ILIMITADO', span: 1 },
+                { title: 'SIP ILIMITADO', span: 1 },
+                { title: 'SIP ILIMITADO', span: 1 },
+                { title: 'SIP ILIMITADO', span: 1 },
+                { title: 'SIP ILIMITADO', span: 1 }
+            ],
+            bottom: [
+                'Call Center',
+                '2 canais',
+                '4 Canais',
+                '10 Canais',
+                '30 Canais',
+                '60 Canais',
+                '5 Canais',
+                '10 Canais',
+                '20 Canais',
+                '30 Canais',
+                '60 Canais'
+            ]
+        },
+        rows: [
+            {
+                service: 'Canais Adicionais (Assinatura Mensal)',
+                values: [
+                    'Não Aplicável',
+                    'Sem possibilidade',
+                    'Sem possibilidade',
+                    'Sem possibilidade',
+                    'Sem possibilidade',
+                    'Sem possibilidade',
+                    'Até 5 canais R$ 30 por canal adicional',
+                    'Até 5 canais R$ 30 por canal adicional',
+                    'Até 5 canais R$ 30 por canal adicional',
+                    'Até 5 canais R$ 30 por canal adicional',
+                    ''
+                ]
+            },
+            {
+                service: 'Canais Adicionais (Franquia Mensal)',
+                values: [
+                    'Não Aplicável',
+                    'Sem possibilidade',
+                    '',
+                    'Até 10 canais R$25 por canal adicional/mês',
+                    'Até 20 canais R$ 25 por canal adicional/mês',
+                    'Até 30 canais R$ 25 por canal adicional/mês',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Sem possibilidade'
+                ]
+            },
+            {
+                service: 'Franquia/Assinatura Mensal (Sem Equipamentos)',
+                values: [
+                    'R$ 200 (Franquia)',
+                    'R$ 150 (Franquia)',
+                    'R$ 250 (Franquia)',
+                    'R$ 350 (Franquia)',
+                    'R$ 550 (Franquia)',
+                    'R$ 1.000 (Franquia)',
+                    'R$ 350 (Assinatura)',
+                    'R$ 450 (Assinatura)',
+                    'R$ 650 (Assinatura)',
+                    'R$ 850 (Assinatura)',
+                    'R$ 1.600 (Assinatura)'
+                ]
+            },
+            {
+                service: 'Franquia/Assinatura Mensal (Com Equipamentos)',
+                values: [
+                    'Não Aplicável',
+                    'Sem possibilidade',
+                    'R$ 500 (Franquia)',
+                    'R$ 650 (Franquia)',
+                    'R$ 1.200 (Franquia)',
+                    '',
+                    'R$ 500 (Assinatura)',
+                    'R$ 600 (Assinatura)',
+                    'R$ 800 (Assinatura)',
+                    'R$ 950 (Assinatura)',
+                    'R$ 1.700 (Assinatura)'
+                ]
+            },
+            {
+                service: 'Minutos Mensais Inclusos para Brasil Móvel',
+                values: [
+                    'Não Aplicável',
+                    '',
+                    'Não aplicável',
+                    '',
+                    '',
+                    '',
+                    '15.000 Minutos',
+                    '20.000 Minutos',
+                    '25.000 Minutos',
+                    '30.000 Minutos',
+                    '60.000 Minutos'
+                ]
+            },
+            {
+                service: 'Números Incluídos (Novos ou Portados)',
+                values: [
+                    'Consultar',
+                    '',
+                    'Máximo 3 Números',
+                    '',
+                    'Máximo 4 Números',
+                    '',
+                    'Máximo 5 Números',
+                    'Máximo 10 Números',
+                    'Máximo 15 Números',
+                    'Máximo 20 Números',
+                    'Máximo 30 Números'
+                ]
+            },
+            {
+                service: 'Numeração Adicional (Mensalidade)',
+                values: [
+                    'Consultar',
+                    '',
+                    'R$ 10 por Número',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'R$ 10 por Número',
+                    '',
+                    ''
+                ]
+            },
+            {
+                service: 'Tarifa Local Fixo (por minuto)',
+                values: [
+                    'R$ 0,015 por minuto',
+                    '',
+                    'R$ 0,02 por minuto',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Ilimitado',
+                    '',
+                    ''
+                ]
+            },
+            {
+                service: 'Tarifa DDD Fixo (por minuto)',
+                values: [
+                    'R$ 0,05 por minuto',
+                    '',
+                    'R$ 0,06 por minuto',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Ilimitado',
+                    '',
+                    ''
+                ]
+            },
+            {
+                service: 'Tarifa Brasil Móvel (por minuto)',
+                values: [
+                    'R$ 0,09 por minuto',
+                    '',
+                    'R$ 0,10 por minuto',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'R$ 10 por minuto',
+                    '',
+                    ''
+                ]
+            }
+        ],
+    };
+
+    const aiAgentPlans: { [key: string]: { name: string; monthlyCost: number; messages: string; minutes: string; premiumVoice: string; credits: string; color: string } } = {
+        plan20k: {
+            name: '20K',
+            monthlyCost: 720.00,
+            credits: '20.000 Créditos de Interação',
+            messages: '10.000 mensagens* ou',
+            minutes: '2.000 minutos** ou',
+            premiumVoice: '1.000 voz premium*** ou',
+            color: 'bg-blue-900'
+        },
+        plan40k: {
+            name: '40K',
+            monthlyCost: 1370.00,
+            credits: '40.000 Créditos de Interação',
+            messages: '20.000 mensagens* ou',
+            minutes: '4.000 minutos** ou',
+            premiumVoice: '2.000 voz premium*** ou',
+            color: 'bg-blue-800'
+        },
+        plan60k: {
+            name: '60K',
+            monthlyCost: 1940.00,
+            credits: '60.000 Créditos de Interação',
+            messages: '30.000 mensagens* ou',
+            minutes: '6.000 minutos** ou',
+            premiumVoice: '3.000 voz premium*** ou',
+            color: 'bg-blue-600'
+        },
+        plan100k: {
+            name: '100K',
+            monthlyCost: 3060.00,
+            credits: '100.000 Créditos de Interação',
+            messages: '50.000 mensagens* ou',
+            minutes: '10.000 minutos** ou',
+            premiumVoice: '5.000 voz premium*** ou',
+            color: 'bg-cyan-500'
+        },
+        plan150k: {
+            name: '150K',
+            monthlyCost: 4320.00,
+            credits: '150.000 Créditos de Interação',
+            messages: '75.000 mensagens* ou',
+            minutes: '15.000 minutos** ou',
+            premiumVoice: '7.500 voz premium*** ou',
+            color: 'bg-teal-400'
+        },
+        plan200k: {
+            name: '200K',
+            monthlyCost: 5400.00,
+            credits: '200.000 Créditos de Interação',
+            messages: '100.000 mensagens* ou',
+            minutes: '20.000 minutos** ou',
+            premiumVoice: '10.000 voz premium*** ou',
+            color: 'bg-cyan-300'
+        },
+    };
+
+    const pabxTiers: PABXTier[] = [
+        { min: 1, max: 10, setup: 1250, monthly: 30 },
+        { min: 11, max: 20, setup: 2000, monthly: 29 },
+        { min: 21, max: 30, setup: 2500, monthly: 28 },
+        { min: 31, max: 50, setup: 3000, monthly: 27 },
+        { min: 51, max: 100, setup: 3500, monthly: 26 },
+        { min: 101, max: 500, setup: 0, monthly: 25 }, // Setup a combinar
+        { min: 501, max: 1000, setup: 0, monthly: 24.50 }, // Setup a combinar
+    ];
 
     const sipPlans: { [key: string]: SIPPlan } = {
-        'plano1': { setup: 100, monthly: 150, channels: 2 },
-        'plano2': { setup: 150, monthly: 250, channels: 5 },
-        'plano3': { setup: 200, monthly: 400, channels: 10 },
+        'plano-10': { name: 'SIP Trunk 10', type: 'PLANO', setup: 1000, monthly: 300, channels: 10 },
+        'plano-20': { name: 'SIP Trunk 20', type: 'PLANO', setup: 1800, monthly: 500, channels: 20 },
+        'plano-30': { name: 'SIP Trunk 30', type: 'PLANO', setup: 2500, monthly: 750, channels: 30 },
+        'plano-50': { name: 'SIP Trunk 50', type: 'PLANO', setup: 4000, monthly: 1200, channels: 50 },
+        'plano-100': { name: 'SIP Trunk 100', type: 'PLANO', setup: 7000, monthly: 2300, channels: 100 },
+        'tarifado': { name: 'SIP Trunk Tarifado', type: 'TARIFADO', setup: 500, monthly: 0, channels: 0 },
+        'ilimitado_30': { name: 'SIP ILIMITADO 30 Canais', setup: 450, monthly: 850, channels: 30, type: 'ILIMITADO' },
+        'ilimitado_60': { name: 'SIP ILIMITADO 60 Canais', setup: 600, monthly: 1600, channels: 60, type: 'ILIMITADO' },
     };
+
+    useEffect(() => {
+        const savedProposals = localStorage.getItem('proposals');
+        if (savedProposals) {
+            setProposals(JSON.parse(savedProposals));
+        }
+    }, []);
 
     const costPerAdditionalChannel = 50;
     const equipmentRentalCost = 35;
@@ -149,52 +405,51 @@ const PABXSIPCalculator: React.FC = () => {
         if (pabxExtensions > 0) {
             const tier = pabxTiers.find(t => pabxExtensions >= t.min && pabxExtensions <= t.max);
             if (tier) {
-                let deviceRentalCost = 0;
-                if (pabxIncludeDevices && pabxDeviceQuantity > 0) {
-                    const rentalTier = deviceRentalTiers.find(t => pabxDeviceQuantity >= t.min && pabxDeviceQuantity <= t.max);
-                    if (rentalTier && rentalTier.price > 0) {
-                        deviceRentalCost = rentalTier.price * pabxDeviceQuantity;
-                    } else if (rentalTier && rentalTier.price === 0) {
-                        // Lógica para valor a combinar
-                        deviceRentalCost = 0; // Ou um valor placeholder
-                    }
-                }
+                const deviceRentalCost = pabxIncludeDevices ? pabxDeviceQuantity * 35 : 0;
 
                 let aiAgentCost = 0;
                 if (includeAIAgent && selectedAIAgentPlan && aiAgentPlans[selectedAIAgentPlan]) {
                     aiAgentCost = aiAgentPlans[selectedAIAgentPlan].monthlyCost;
                 }
 
-                const baseMonthly = tier.monthly + (pabxExtensions > tier.max ? (pabxExtensions - tier.max) * (tier.monthly / tier.max) : 0);
+                const setup = pabxIncludeSetup ? tier.setup : 0;
+                const baseMonthly = tier.monthly * pabxExtensions;
                 const totalMonthly = baseMonthly + deviceRentalCost + aiAgentCost;
-                
-                setPabxResult({ setup: tier.setup, baseMonthly, deviceRentalCost, aiAgentCost, totalMonthly });
+
+                setPabxResult({ setup, baseMonthly, deviceRentalCost, aiAgentCost, totalMonthly });
             } else {
                 setPabxResult(null);
             }
         } else {
             setPabxResult(null);
         }
-    }, [pabxExtensions, pabxIncludeDevices, pabxDeviceQuantity, includeAIAgent, selectedAIAgentPlan]);
+    }, [pabxExtensions, pabxIncludeDevices, pabxDeviceQuantity, includeAIAgent, selectedAIAgentPlan, pabxIncludeSetup]);
 
     useEffect(() => {
         if (selectedSipPlan) {
             const plan = sipPlans[selectedSipPlan];
             if (plan) {
                 let monthly = plan.monthly;
-                if (sipWithEquipment) {
+                let additionalChannelsCost = 0;
+
+                if (plan.type === 'TARIFADO' && sipAdditionalChannels > 0) {
+                    additionalChannelsCost = sipAdditionalChannels * 20; // R$ 20 por canal adicional
+                    monthly += additionalChannelsCost;
+                }
+
+                if (sipWithEquipment && plan.channels > 0) {
                     monthly += equipmentRentalCost * plan.channels;
                 }
-                const additionalChannelsCost = sipAdditionalChannels * costPerAdditionalChannel;
-                monthly += additionalChannelsCost;
-                setSipResult({ setup: plan.setup, monthly, additionalChannelsCost });
+
+                const setup = sipIncludeSetup ? plan.setup : 0;
+                setSipResult({ setup, monthly, additionalChannelsCost });
             } else {
                 setSipResult(null);
             }
         } else {
             setSipResult(null);
         }
-    }, [selectedSipPlan, sipAdditionalChannels, sipWithEquipment]);
+    }, [selectedSipPlan, sipAdditionalChannels, sipWithEquipment, sipIncludeSetup]);
 
     // Funções auxiliares
     const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
@@ -248,7 +503,7 @@ const PABXSIPCalculator: React.FC = () => {
     const handleAddSipProduct = () => {
         if (sipResult && selectedSipPlan) {
             const plan = sipPlans[selectedSipPlan];
-            const description = `Plano SIP Trunk (${plan.channels} canais)${sipWithEquipment ? ' com equipamento' : ''}${sipAdditionalChannels > 0 ? ` + ${sipAdditionalChannels} canais adicionais` : ''}`;
+            const description = `${plan.name}${sipWithEquipment && plan.channels > 0 ? ' com equipamento' : ''}${sipAdditionalChannels > 0 ? ` + ${sipAdditionalChannels} canais adicionais` : ''}`;
             setAddedProducts(prev => [...prev, {
                 id: generateUniqueId(),
                 type: 'SIP',
@@ -345,7 +600,7 @@ const PABXSIPCalculator: React.FC = () => {
             } else {
                 setProposals(prev => prev.map(p => p.id === proposalToSave.id ? proposalToSave : p));
             }
-            
+
             setViewMode('search');
             setCurrentProposal(null);
             clearForm();
@@ -358,7 +613,7 @@ const PABXSIPCalculator: React.FC = () => {
         clearForm();
     };
 
-    const filteredProposals = proposals.filter(p => 
+    const filteredProposals = (proposals || []).filter(p =>
         p.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -376,14 +631,14 @@ const PABXSIPCalculator: React.FC = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="flex gap-4 mb-4">
-                                <Input 
+                                <Input
                                     type="text"
                                     placeholder="Buscar por cliente ou ID..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="bg-slate-800 border-slate-700 text-white"
                                 />
-                                <Button onClick={createNewProposal} className="bg-blue-600 hover:bg-blue-700"><Plus className="h-4 w-4 mr-2"/>Nova Proposta</Button>
+                                <Button onClick={createNewProposal} className="bg-blue-600 hover:bg-blue-700"><Plus className="h-4 w-4 mr-2" />Nova Proposta</Button>
                             </div>
                             <div className="overflow-x-auto">
                                 <Table>
@@ -403,7 +658,7 @@ const PABXSIPCalculator: React.FC = () => {
                                                 <TableCell>{p.clientName}</TableCell>
                                                 <TableCell>{p.date}</TableCell>
                                                 <TableCell>{formatCurrency(p.totalMonthly)}</TableCell>
-                                                <TableCell><Button variant="outline" size="sm" onClick={() => editProposal(p)}><Edit className="h-4 w-4"/></Button></TableCell>
+                                                <TableCell><Button variant="outline" size="sm" onClick={() => editProposal(p)}><Edit className="h-4 w-4" /></Button></TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -412,7 +667,7 @@ const PABXSIPCalculator: React.FC = () => {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div>
+                    <>
                         <Card className="bg-slate-900/80 border-slate-800 text-white mb-6">
                             <CardHeader>
                                 <CardTitle>{viewMode === 'create' ? 'Criar Nova Proposta' : 'Editar Proposta'}</CardTitle>
@@ -430,185 +685,276 @@ const PABXSIPCalculator: React.FC = () => {
                             </CardContent>
                         </Card>
 
-                        <Tabs defaultValue="calculator" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-                                <TabsTrigger value="calculator">Calculadora</TabsTrigger>
-                                <TabsTrigger value="list-price">List Price</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="calculator">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
-                                    {/* Calculadora PABX */}
-                                    <Card className="bg-slate-900/80 border-slate-800 text-white">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center"><Phone className="mr-2"/>PABX em Nuvem</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <Label htmlFor="pabx-extensions">Quantidade de Ramais</Label>
-                                                    <Input id="pabx-extensions" type="number" value={pabxExtensions || ''} onChange={(e) => setPabxExtensions(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
+                        <div>
+                            <Tabs defaultValue="calculator" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2 bg-slate-800">
+                                    <TabsTrigger value="calculator">Calculadora</TabsTrigger>
+                                    <TabsTrigger value="list-price">List Price</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="calculator">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+                                        {/* Calculadora PABX */}
+                                        <Card className="bg-slate-900/80 border-slate-800 text-white">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center"><Phone className="mr-2" />PABX em Nuvem</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <Label htmlFor="pabx-extensions">Quantidade de Ramais</Label>
+                                                        <Input id="pabx-extensions" type="number" value={pabxExtensions} onChange={e => setPabxExtensions(Number(e.target.value))} className="bg-slate-700" />
+                                                    </div>
+                                                    <div className="flex items-center space-x-2 pt-2">
+                                                        <Checkbox id="pabxIncludeSetup" checked={pabxIncludeSetup} onCheckedChange={(checked) => setPabxIncludeSetup(!!checked)} className="border-white" />
+                                                        <label htmlFor="pabxIncludeSetup" className="text-sm font-medium leading-none">Incluir Taxa de Setup</label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2 pt-2">
+                                                        <Checkbox id="pabxIncludeDevices" checked={pabxIncludeDevices} onCheckedChange={(checked) => setPabxIncludeDevices(Boolean(checked))} />
+                                                        <Label htmlFor="pabxIncludeDevices">Incluir Aparelhos (Ramais Físicos)</Label>
+                                                    </div>
+                                                    {pabxIncludeDevices && (
+                                                        <div className="pl-6 mt-2">
+                                                            <Label htmlFor="pabx-device-quantity">Quantidade de Aparelhos</Label>
+                                                            <Input id="pabx-device-quantity" type="number" value={pabxDeviceQuantity} onChange={(e) => setPabxDeviceQuantity(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center space-x-2 mt-4">
+                                                        <Checkbox id="includeAIAgent" checked={includeAIAgent} onCheckedChange={(checked) => setIncludeAIAgent(Boolean(checked))} />
+                                                        <Label htmlFor="includeAIAgent">Incluir Agente IA</Label>
+                                                    </div>
+                                                    {includeAIAgent && (
+                                                        <div className="pl-6 mt-2">
+                                                            <Label htmlFor="aiAgentPlan">Plano de Agente IA</Label>
+                                                            <Select onValueChange={setSelectedAIAgentPlan} value={selectedAIAgentPlan}>
+                                                                <SelectTrigger id="aiAgentPlan" className="bg-slate-700 border-slate-600">
+                                                                    <SelectValue placeholder="Selecione um plano de créditos" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="bg-slate-800 text-white">
+                                                                    {Object.entries(aiAgentPlans).map(([key, plan]) => (
+                                                                        <SelectItem key={key} value={key}>{plan.name}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {selectedAIAgentPlan && aiAgentPlans[selectedAIAgentPlan] && (
+                                                                <div className="mt-4 p-3 bg-slate-800/50 rounded-lg text-sm text-slate-300">
+                                                                    <p className="font-bold text-white mb-2">Tenha até:</p>
+                                                                    <p>{aiAgentPlans[selectedAIAgentPlan].messages}</p>
+                                                                    <p>{aiAgentPlans[selectedAIAgentPlan].minutes}</p>
+                                                                    <p>{aiAgentPlans[selectedAIAgentPlan].premiumVoice}</p>
+                                                                    <p className="text-xs text-slate-400 mt-2">Opções acima combinadas</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="space-y-2">
-                                                 <div className="flex items-center space-x-2">
-                                                     <Checkbox id="pabxIncludeDevices" checked={pabxIncludeDevices} onCheckedChange={(checked) => setPabxIncludeDevices(Boolean(checked))} />
-                                                     <Label htmlFor="pabxIncludeDevices">Incluir Aparelhos (Ramais Físicos)</Label>
-                                                 </div>
-                                                 {pabxIncludeDevices && (
-                                                     <div className="pl-6 mt-2">
-                                                         <Label htmlFor="pabx-device-quantity">Quantidade de Aparelhos</Label>
-                                                         <Input id="pabx-device-quantity" type="number" value={pabxDeviceQuantity || ''} onChange={(e) => setPabxDeviceQuantity(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
-                                                     </div>
-                                                 )}
-                                                 <div className="flex items-center space-x-2 mt-4">
-                                                     <Checkbox id="includeAIAgent" checked={includeAIAgent} onCheckedChange={(checked) => setIncludeAIAgent(Boolean(checked))} />
-                                                     <Label htmlFor="includeAIAgent">Incluir Agente IA</Label>
-                                                 </div>
-                                                 {includeAIAgent && (
-                                                     <div className="pl-6 mt-2">
-                                                         <Label htmlFor="aiAgentPlan">Plano de Agente IA</Label>
-                                                         <Select onValueChange={setSelectedAIAgentPlan} value={selectedAIAgentPlan}>
-                                                             <SelectTrigger id="aiAgentPlan" className="bg-slate-700 border-slate-600">
-                                                                 <SelectValue placeholder="Selecione um plano de créditos" />
-                                                             </SelectTrigger>
-                                                             <SelectContent className="bg-slate-800 text-white">
-                                                                 {Object.entries(aiAgentPlans).map(([key, plan]) => (
-                                                                     <SelectItem key={key} value={key}>{plan.name}</SelectItem>
-                                                                 ))}
-                                                             </SelectContent>
-                                                         </Select>
-                                                         {selectedAIAgentPlan && aiAgentPlans[selectedAIAgentPlan] && (
-                                                             <div className="mt-4 p-3 bg-slate-800/50 rounded-lg text-sm text-slate-300">
-                                                                 <p className="font-bold text-white mb-2">Tenha até:</p>
-                                                                 <p>{aiAgentPlans[selectedAIAgentPlan].messages}</p>
-                                                                 <p>{aiAgentPlans[selectedAIAgentPlan].minutes}</p>
-                                                                 <p>{aiAgentPlans[selectedAIAgentPlan].premiumVoice}</p>
-                                                                 <p className="text-xs text-slate-400 mt-2">Opções acima combinadas</p>
-                                                             </div>
-                                                         )}
-                                                     </div>
-                                                 )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter className="flex-col items-start">
-                                            {pabxResult && (
-                                                <div className="w-full">
-                                                    <Separator className="bg-slate-700 my-4"/>
-                                                    <div className="text-lg font-bold mb-2">Resultado PABX:</div>
-                                                    <div className="flex justify-between"><span>Taxa de Setup:</span> <span>{formatCurrency(pabxResult.setup)}</span></div>
-                                                    <div className="flex justify-between"><span>Mensalidade Base:</span> <span>{formatCurrency(pabxResult.baseMonthly)}</span></div>
-                                                    {pabxResult.deviceRentalCost > 0 && <div className="flex justify-between"><span>Aluguel Aparelhos:</span> <span>{formatCurrency(pabxResult.deviceRentalCost)}</span></div>}
-                                                    {pabxResult.aiAgentCost > 0 && <div className="flex justify-between"><span>Agente IA:</span> <span>{formatCurrency(pabxResult.aiAgentCost)}</span></div>}
-                                                    <div className="flex justify-between text-green-400 font-bold mt-2"><span>Total Mensal:</span> <span>{formatCurrency(pabxResult.totalMonthly)}</span></div>
-                                                    <Button onClick={handleAddPabxProduct} className="w-full mt-4 bg-green-600 hover:bg-green-700">Adicionar à Proposta</Button>
-                                                </div>
-                                            )}
-                                        </CardFooter>
-                                    </Card>
+                                            </CardContent>
+                                            <CardFooter className="flex-col items-start">
+                                                {pabxResult && (
+                                                    <div className="w-full">
+                                                        <Separator className="bg-slate-700 my-4" />
+                                                        <div className="text-lg font-bold mb-2">Resultado PABX:</div>
+                                                        <div className="flex justify-between"><span>Taxa de Setup:</span> <span>{formatCurrency(pabxResult.setup)}</span></div>
+                                                        <div className="flex justify-between"><span>Mensalidade Base:</span> <span>{formatCurrency(pabxResult.baseMonthly)}</span></div>
+                                                        {pabxResult.deviceRentalCost > 0 && (
+                                                            <div className="flex justify-between"><span>Aluguel de Aparelhos:</span> <span>{formatCurrency(pabxResult.deviceRentalCost)}</span></div>
+                                                        )}
+                                                        {pabxResult.aiAgentCost > 0 && (
+                                                            <div className="flex justify-between"><span>Agente IA:</span> <span>{formatCurrency(pabxResult.aiAgentCost)}</span></div>
+                                                        )}
+                                                        <div className="flex justify-between text-green-400 font-bold mt-2"><span>Total Mensal:</span> <span>{formatCurrency(pabxResult.baseMonthly + pabxResult.deviceRentalCost + pabxResult.aiAgentCost)}</span></div>
+                                                        <Button onClick={handleAddPabxProduct} className="w-full mt-4 bg-green-600 hover:bg-green-700">Adicionar à Proposta</Button>
+                                                    </div>
+                                                )}
+                                            </CardFooter>
+                                        </Card>
 
-                                    {/* Calculadora SIP Trunk */}
-                                    <Card className="bg-slate-900/80 border-slate-800 text-white">
+                                        {/* Calculadora SIP */}
+                                        <Card className="bg-slate-900/80 border-slate-800 text-white">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center"><PhoneForwarded className="mr-2" />SIP Trunk</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <Label htmlFor="sip-plan">Plano SIP</Label>
+                                                        <Select onValueChange={setSelectedSipPlan} value={selectedSipPlan}>
+                                                            <SelectTrigger className="bg-slate-700">
+                                                                <SelectValue placeholder="Selecione um plano" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-slate-800 text-white">
+                                                                {Object.entries(sipPlans).map(([key, plan]) => (
+                                                                    <SelectItem key={key} value={key}>{plan.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2 pt-2">
+                                                        <Checkbox id="sipIncludeSetup" checked={sipIncludeSetup} onCheckedChange={(checked) => setSipIncludeSetup(!!checked)} className="border-white" />
+                                                        <label htmlFor="sipIncludeSetup" className="text-sm font-medium leading-none">Incluir Taxa de Setup</label>
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="sip-additional-channels">Canais Adicionais</Label>
+                                                        <Input id="sip-additional-channels" type="number" value={sipAdditionalChannels || ''} onChange={(e) => setSipAdditionalChannels(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Checkbox id="sip-with-equipment" checked={sipWithEquipment} onCheckedChange={(checked) => setSipWithEquipment(!!checked)} className="border-white" />
+                                                        <Label htmlFor="sip-with-equipment">Incluir Equipamento (ATA/SBC)</Label>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="flex-col items-start">
+                                                {sipResult && (
+                                                    <div className="w-full">
+                                                        <Separator className="bg-slate-700 my-4" />
+                                                        <div className="text-lg font-bold mb-2">Resultado SIP:</div>
+                                                        <div className="flex justify-between"><span>Taxa de Setup:</span> <span>{formatCurrency(sipResult.setup)}</span></div>
+                                                        <div className="flex justify-between text-green-400 font-bold mt-2"><span>Total Mensal:</span> <span>{formatCurrency(sipResult.monthly)}</span></div>
+                                                        <Button onClick={handleAddSipProduct} className="w-full mt-4 bg-green-600 hover:bg-green-700">Adicionar à Proposta</Button>
+                                                    </div>
+                                                )}
+                                            </CardFooter>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="list-price">
+                                    <Card className="bg-slate-900/80 border-slate-800 text-white mt-6">
                                         <CardHeader>
-                                            <CardTitle className="flex items-center"><PhoneForwarded className="mr-2"/>SIP Trunk</CardTitle>
+                                            <CardTitle>Tabela de Preços (List Price)</CardTitle>
+                                            <CardDescription>Valores de referência para os serviços.</CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="space-y-4">
+                                            <div className="space-y-12">
+                                                {/* Tabela PABX em Nuvem */}
                                                 <div>
-                                                    <Label htmlFor="sip-plan">Plano SIP</Label>
-                                                    <Select onValueChange={setSelectedSipPlan} value={selectedSipPlan}>
-                                                        <SelectTrigger id="sip-plan" className="bg-slate-700 border-slate-600">
-                                                            <SelectValue placeholder="Selecione um plano" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-slate-800 text-white">
-                                                            {Object.entries(sipPlans).map(([key, plan]) => (
-                                                                <SelectItem key={key} value={key}>{`Plano ${plan.channels} canais`}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <h3 className="text-xl font-semibold mb-4">PABX em Nuvem</h3>
+                                                    <div className="overflow-x-auto">
+                                                        <Table className="min-w-full border-collapse">
+                                                            <TableHeader>
+                                                                <TableRow className="bg-yellow-400">
+                                                                    {pabxListPriceData.headers.map(header => <TableHead key={header} className="text-black font-bold border border-slate-500 px-2 py-1">{header}</TableHead>)}
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {pabxListPriceData.rows.map(row => (
+                                                                    <TableRow key={row.service} className="border-slate-800">
+                                                                        <TableCell className="font-semibold border border-slate-600 px-2 py-1">{row.service}</TableCell>
+                                                                        {row.values.map((value, index) => <TableCell key={index} className="border border-slate-700 text-center px-2 py-1">{value}</TableCell>)}
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                </div>
+
+                                                {/* Tabela SIP Trunk */}
+                                                <div>
+                                                    <h3 className="text-xl font-semibold mb-4">SIP Trunk</h3>
+                                                    <div className="overflow-x-auto pb-2">
+                                                        <Table className="min-w-full border-collapse">
+                                                            <TableHeader>
+                                                                <TableRow className="bg-blue-900">
+                                                                    <TableHead rowSpan={2} className="text-white font-bold border-r border-b border-slate-500 align-middle text-center p-2">SIP TRUNK</TableHead>
+                                                                    {sipListPriceData.headers.top.map(header => (
+                                                                        <TableHead key={header.title} colSpan={header.span} className="text-white font-bold border-b border-slate-500 text-center p-2">{header.title}</TableHead>
+                                                                    ))}
+                                                                </TableRow>
+                                                                <TableRow className="bg-blue-800">
+                                                                    {sipListPriceData.headers.bottom.map(header => (
+                                                                        <TableHead key={header} className="text-white font-semibold border-r border-slate-600 text-center p-2">{header}</TableHead>
+                                                                    ))}
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {sipListPriceData.rows.map(row => (
+                                                                    <TableRow key={row.service} className="border-slate-800">
+                                                                        <TableCell className="font-semibold border border-slate-600 p-2">{row.service}</TableCell>
+                                                                        {row.values.map((cell, index) => {
+                                                                            if (typeof cell === 'object' && cell !== null) {
+                                                                                return <TableCell key={index} colSpan={cell.span} className="border border-slate-700 text-center p-2">{cell.value}</TableCell>;
+                                                                            }
+                                                                            return <TableCell key={index} className="border border-slate-700 text-center p-2">{cell as React.ReactNode}</TableCell>;
+                                                                        })}
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="sip-additional-channels">Canais Adicionais</Label>
-                                                    <Input id="sip-additional-channels" type="number" value={sipAdditionalChannels || ''} onChange={(e) => setSipAdditionalChannels(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox id="sip-with-equipment" checked={sipWithEquipment} onCheckedChange={(checked) => setSipWithEquipment(Boolean(checked))} />
-                                                    <Label htmlFor="sip-with-equipment">Incluir Equipamento (ATA/SBC)</Label>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter className="flex-col items-start">
-                                            {sipResult && (
-                                                <div className="w-full">
-                                                    <Separator className="bg-slate-700 my-4"/>
-                                                    <div className="text-lg font-bold mb-2">Resultado SIP:</div>
-                                                    <div className="flex justify-between"><span>Taxa de Setup:</span> <span>{formatCurrency(sipResult.setup)}</span></div>
-                                                    <div className="flex justify-between text-green-400 font-bold mt-2"><span>Total Mensal:</span> <span>{formatCurrency(sipResult.monthly)}</span></div>
-                                                    <Button onClick={handleAddSipProduct} className="w-full mt-4 bg-green-600 hover:bg-green-700">Adicionar à Proposta</Button>
-                                                </div>
-                                            )}
-                                        </CardFooter>
-                                    </Card>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="list-price">
-                                <Card className="bg-slate-900/80 border-slate-800 text-white mt-6">
-                                    <CardHeader>
-                                        <CardTitle>Tabela de Preços (List Price)</CardTitle>
-                                        <CardDescription>Valores de referência para os serviços.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-8">
-                                            <div>
-                                                <h3 className="text-xl font-semibold mb-4">PABX em Nuvem</h3>
-                                                <Table>
-                                                    <TableHeader><TableRow className="border-slate-700"><TableHead className="text-white">Ramais</TableHead><TableHead className="text-white">Setup</TableHead><TableHead className="text-white">Mensal</TableHead></TableRow></TableHeader>
-                                                    <TableBody>
-                                                        {pabxTiers.map(tier => (
-                                                            <TableRow key={tier.min} className="border-slate-800"><TableCell>{`${tier.min}-${tier.max}`}</TableCell><TableCell>{formatCurrency(tier.setup)}</TableCell><TableCell>{formatCurrency(tier.monthly)}</TableCell></TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-semibold mb-4">Aluguel de Aparelhos IP</h3>
-                                                <Table>
-                                                    <TableHeader><TableRow className="border-slate-700"><TableHead className="text-white">Quantidade</TableHead><TableHead className="text-white">Valor Mensal/Unitário</TableHead></TableRow></TableHeader>
-                                                    <TableBody>
-                                                        {deviceRentalTiers.map(tier => (
-                                                            <TableRow key={tier.min} className="border-slate-800"><TableCell>{`${tier.min}-${tier.max}`}</TableCell><TableCell>{tier.price > 0 ? formatCurrency(tier.price) : 'A combinar'}</TableCell></TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-semibold mb-4">Agente IA - Créditos de Interação</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    {Object.values(aiAgentPlans).map((plan, index) => (
-                                                        <div key={index} className="bg-slate-800 rounded-lg p-6 flex flex-col text-center items-center">
-                                                            <h4 className="text-lg font-bold text-cyan-400 mb-2">{plan.name}</h4>
-                                                            <div className="flex-grow">
-                                                                <p className="text-slate-300">{plan.messages}</p>
-                                                                <p className="text-slate-300">{plan.minutes}</p>
-                                                                <p className="text-slate-300 mb-4">{plan.premiumVoice}</p>
-                                                                <p className="text-xs text-slate-400 mb-4">Opções acima combinadas</p>
+                                                    <div className="bg-gradient-to-r from-blue-600 to-cyan-400 rounded-t-lg p-4 mb-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                                                                Agente de IA
                                                             </div>
-                                                            <div className="bg-slate-900 w-full p-3 rounded-b-lg mt-auto">
-                                                                <p className="text-2xl font-bold text-green-400">{formatCurrency(plan.monthlyCost)}</p>
+                                                            <div className="text-white">
+                                                                <h3 className="text-xl font-bold">Créditos de Interação</h3>
+                                                                <p className="text-sm opacity-90">Por mensagem, ligação e voz premium</p>
+                                                            </div>
+                                                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                                                                <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center">
+                                                                    <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                                <div className="text-center mt-6 text-xs text-slate-400">
-                                                    <p>* 2 créditos por mensagem</p>
-                                                    <p>** 10 créditos por minuto (voz padrão)</p>
-                                                    <p>*** 20 créditos por minuto (voz premium)</p>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                                                        {Object.values(aiAgentPlans).map((plan, index) => (
+                                                            <div key={index} className="bg-slate-100 rounded-lg overflow-hidden shadow-lg">
+                                                                {/* Círculo com o nome do plano */}
+                                                                <div className="flex justify-center pt-6 pb-4">
+                                                                    <div className={`w-20 h-20 ${plan.color} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                                                                        {plan.name}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Créditos */}
+                                                                <div className="px-4 pb-2 text-center">
+                                                                    <p className="text-xs text-gray-600 font-medium">{plan.credits}</p>
+                                                                </div>
+
+                                                                {/* Seção "Tenha até:" */}
+                                                                <div className="bg-gray-200 px-4 py-2">
+                                                                    <p className="text-sm font-bold text-gray-800 text-center">Tenha até:</p>
+                                                                </div>
+
+                                                                {/* Detalhes */}
+                                                                <div className="px-4 py-3 space-y-2">
+                                                                    <div className="bg-gray-300 px-3 py-2 rounded text-xs text-gray-800 text-center">
+                                                                        {plan.messages}
+                                                                    </div>
+                                                                    <div className="bg-gray-300 px-3 py-2 rounded text-xs text-gray-800 text-center">
+                                                                        {plan.minutes}
+                                                                    </div>
+                                                                    <div className="bg-gray-300 px-3 py-2 rounded text-xs text-gray-800 text-center">
+                                                                        {plan.premiumVoice}
+                                                                    </div>
+                                                                    <div className="bg-gray-300 px-3 py-2 rounded text-xs text-gray-600 text-center">
+                                                                        Opções acima combinadas
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Preço */}
+                                                                <div className="bg-gray-800 px-4 py-3 text-center">
+                                                                    <p className="text-lg font-bold text-white">{formatCurrency(plan.monthlyCost)}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Legendas */}
+                                                    <div className="text-center mt-6 text-xs text-gray-600 space-y-1">
+                                                        <p>✧ *2 créditos por mensagem</p>
+                                                        <p>✧ **10 créditos por minuto (voz padrão)</p>
+                                                        <p>✧ ***20 créditos por minuto (voz premium)</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-                        </Tabs>
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                            </Tabs>
+                        </div>
 
                         <Card className="bg-slate-900/80 border-slate-800 text-white mt-6">
                             <CardHeader>
@@ -623,12 +969,12 @@ const PABXSIPCalculator: React.FC = () => {
                                                 <TableCell>{p.description}</TableCell>
                                                 <TableCell>{formatCurrency(p.setup)}</TableCell>
                                                 <TableCell>{formatCurrency(p.monthly)}</TableCell>
-                                                <TableCell><Button variant="destructive" size="sm" onClick={() => handleRemoveProduct(p.id)}><Trash2 className="h-4 w-4"/></Button></TableCell>
+                                                <TableCell><Button variant="destructive" size="sm" onClick={() => handleRemoveProduct(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
-                                <Separator className="bg-slate-700 my-4"/>
+                                <Separator className="bg-slate-700 my-4" />
                                 <div className="flex justify-end text-lg font-bold">
                                     <div className="w-1/3 text-right">
                                         <div className="flex justify-between"><span>Total Setup:</span> <span>{formatCurrency(totalSetup)}</span></div>
@@ -643,9 +989,9 @@ const PABXSIPCalculator: React.FC = () => {
                             <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700" disabled={addedProducts.length === 0}><Download className="h-4 w-4 mr-2" />Gerar PDF</Button>
                             <Button variant="outline" onClick={cancelAction}>Cancelar</Button>
                         </div>
-                    </div>
+                    </>
                 )}
-            </div>
+            </div >
 
             <div id="print-area" className="print-only">
                 {currentProposal && (
