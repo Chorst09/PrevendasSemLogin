@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import '@/styles/print.css';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from '@/components/ui/checkbox';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,6 +42,7 @@ interface SIPPlan {
     type: 'PLANO' | 'TARIFADO';
     setup: number;
     monthly: number;
+    monthlyWithEquipment?: number; // Opcional para planos que não têm essa opção
     channels: number;
 }
 
@@ -365,31 +368,96 @@ const PABXSIPCalculator: React.FC = () => {
             messages: '100.000 mensagens* ou',
             minutes: '20.000 minutos** ou',
             premiumVoice: '10.000 voz premium*** ou',
-            color: 'bg-cyan-300'
+            color: 'bg-teal-400'
         },
     };
 
     const pabxTiers: PABXTier[] = [
-        { min: 1, max: 10, setup: 1250, monthly: 30 },
-        { min: 11, max: 20, setup: 2000, monthly: 29 },
-        { min: 21, max: 30, setup: 2500, monthly: 28 },
-        { min: 31, max: 50, setup: 3000, monthly: 27 },
-        { min: 51, max: 100, setup: 3500, monthly: 26 },
-        { min: 101, max: 500, setup: 0, monthly: 25 }, // Setup a combinar
-        { min: 501, max: 1000, setup: 0, monthly: 24.50 }, // Setup a combinar
+        { min: 1, max: 10, setup: 1250, monthly: 35 },
+        { min: 11, max: 20, setup: 2000, monthly: 33 },
+        { min: 21, max: 30, setup: 2500, monthly: 31 },
+        { min: 31, max: 50, setup: 3000, monthly: 29 },
+        { min: 51, max: 100, setup: 3500, monthly: 27 },
+        { min: 101, max: 500, setup: 0, monthly: 25 }, // Valor a combinar
+        { min: 501, max: 1000, setup: 0, monthly: 23 } // Valor a combinar
     ];
 
-    const sipPlans: { [key: string]: SIPPlan } = {
-        'plano-10': { name: 'SIP Trunk 10', type: 'PLANO', setup: 1000, monthly: 300, channels: 10 },
-        'plano-20': { name: 'SIP Trunk 20', type: 'PLANO', setup: 1800, monthly: 500, channels: 20 },
-        'plano-30': { name: 'SIP Trunk 30', type: 'PLANO', setup: 2500, monthly: 750, channels: 30 },
-        'plano-50': { name: 'SIP Trunk 50', type: 'PLANO', setup: 4000, monthly: 1200, channels: 50 },
-        'plano-100': { name: 'SIP Trunk 100', type: 'PLANO', setup: 7000, monthly: 2300, channels: 100 },
-        'tarifado': { name: 'SIP Trunk Tarifado', type: 'TARIFADO', setup: 500, monthly: 0, channels: 0 },
-        'ilimitado_30': { name: 'SIP ILIMITADO 30 Canais', setup: 450, monthly: 850, channels: 30, type: 'ILIMITADO' },
-        'ilimitado_60': { name: 'SIP ILIMITADO 60 Canais', setup: 600, monthly: 1600, channels: 60, type: 'ILIMITADO' },
+    const sipPlans: SIPPlan[] = [
+        // Planos TARIFADO
+        { name: 'SIP TARIFADO Call Center', type: 'TARIFADO', setup: 500, monthly: 200, channels: 0 },
+        { name: 'SIP TARIFADO 2 Canais', type: 'TARIFADO', setup: 500, monthly: 150, channels: 2 },
+        { name: 'SIP TARIFADO 4 Canais', type: 'TARIFADO', setup: 500, monthly: 250, monthlyWithEquipment: 500, channels: 4 },
+        { name: 'SIP TARIFADO 10 Canais', type: 'TARIFADO', setup: 500, monthly: 350, monthlyWithEquipment: 500, channels: 10 },
+        { name: 'SIP TARIFADO 30 Canais', type: 'TARIFADO', setup: 500, monthly: 550, monthlyWithEquipment: 650, channels: 30 },
+        { name: 'SIP TARIFADO 60 Canais', type: 'TARIFADO', setup: 500, monthly: 1000, monthlyWithEquipment: 1200, channels: 60 },
+        // Planos ILIMITADO
+        { name: 'SIP ILIMITADO 5 Canais', type: 'PLANO', setup: 500, monthly: 350, monthlyWithEquipment: 500, channels: 5 },
+        { name: 'SIP ILIMITADO 10 Canais', type: 'PLANO', setup: 500, monthly: 450, monthlyWithEquipment: 600, channels: 10 },
+        { name: 'SIP ILIMITADO 20 Canais', type: 'PLANO', setup: 500, monthly: 650, monthlyWithEquipment: 800, channels: 20 },
+        { name: 'SIP ILIMITADO 30 Canais', type: 'PLANO', setup: 500, monthly: 850, monthlyWithEquipment: 950, channels: 30 },
+        { name: 'SIP ILIMITADO 60 Canais', type: 'PLANO', setup: 500, monthly: 1600, monthlyWithEquipment: 1700, channels: 60 },
+    ];
+
+    const costPerAdditionalChannel = 50;
+    const equipmentRentalCost = 35;
+
+    // Lógica de Cálculo
+    const calculatePabxPrice = () => {
+        if (pabxExtensions <= 0) {
+            setPabxResult(null);
+            return;
+        }
+
+        const tier = pabxTiers.find(t => pabxExtensions >= t.min && pabxExtensions <= t.max);
+        if (!tier) {
+            setPabxResult(null);
+            return;
+        }
+
+        let setup = pabxIncludeSetup ? tier.setup : 0;
+        let baseMonthly = tier.monthly * pabxExtensions;
+        let deviceRentalCost = 0;
+        let aiAgentCost = 0;
+
+        if (pabxIncludeDevices) {
+            deviceRentalCost = pabxDeviceQuantity * 35; // R$ 35 por dispositivo
+        }
+
+        if (includeAIAgent) {
+            const plan = Object.values(aiAgentPlans).find(p => p.name === selectedAIAgentPlan);
+            if (plan) {
+                aiAgentCost = plan.monthlyCost;
+            }
+        }
+
+        const totalMonthly = baseMonthly + deviceRentalCost + aiAgentCost;
+        setPabxResult({ setup, baseMonthly, deviceRentalCost, aiAgentCost, totalMonthly });
     };
 
+    const calculateSipPrice = () => {
+        if (!selectedSipPlan) {
+            setSipResult(null);
+            return;
+        }
+
+        const plan = sipPlans.find(p => p.name === selectedSipPlan);
+        if (plan) {
+            let monthly = (sipWithEquipment && plan.monthlyWithEquipment) ? plan.monthlyWithEquipment : plan.monthly;
+            let additionalChannelsCost = 0;
+
+            if (plan.type === 'TARIFADO' && sipAdditionalChannels > 0) {
+                additionalChannelsCost = sipAdditionalChannels * 20; // R$ 20 por canal adicional
+                monthly += additionalChannelsCost;
+            }
+
+            const setup = sipIncludeSetup ? plan.setup : 0;
+            setSipResult({ setup, monthly, additionalChannelsCost });
+        } else {
+            setSipResult(null);
+        }
+    };
+
+    // Efeitos para cálculos e salvar propostas
     useEffect(() => {
         const savedProposals = localStorage.getItem('proposals');
         if (savedProposals) {
@@ -397,57 +465,16 @@ const PABXSIPCalculator: React.FC = () => {
         }
     }, []);
 
-    const costPerAdditionalChannel = 50;
-    const equipmentRentalCost = 35;
-
-    // Efeitos para cálculos
     useEffect(() => {
-        if (pabxExtensions > 0) {
-            const tier = pabxTiers.find(t => pabxExtensions >= t.min && pabxExtensions <= t.max);
-            if (tier) {
-                const deviceRentalCost = pabxIncludeDevices ? pabxDeviceQuantity * 35 : 0;
-
-                let aiAgentCost = 0;
-                if (includeAIAgent && selectedAIAgentPlan && aiAgentPlans[selectedAIAgentPlan]) {
-                    aiAgentCost = aiAgentPlans[selectedAIAgentPlan].monthlyCost;
-                }
-
-                const setup = pabxIncludeSetup ? tier.setup : 0;
-                const baseMonthly = tier.monthly * pabxExtensions;
-                const totalMonthly = baseMonthly + deviceRentalCost + aiAgentCost;
-
-                setPabxResult({ setup, baseMonthly, deviceRentalCost, aiAgentCost, totalMonthly });
-            } else {
-                setPabxResult(null);
-            }
-        } else {
-            setPabxResult(null);
-        }
-    }, [pabxExtensions, pabxIncludeDevices, pabxDeviceQuantity, includeAIAgent, selectedAIAgentPlan, pabxIncludeSetup]);
+        calculatePabxPrice();
+    }, [pabxExtensions, pabxIncludeDevices, pabxDeviceQuantity, pabxIncludeSetup, includeAIAgent, selectedAIAgentPlan]);
 
     useEffect(() => {
-        if (selectedSipPlan) {
-            const plan = sipPlans[selectedSipPlan];
-            if (plan) {
-                let monthly = plan.monthly;
-                let additionalChannelsCost = 0;
-
-                if (plan.type === 'TARIFADO' && sipAdditionalChannels > 0) {
-                    additionalChannelsCost = sipAdditionalChannels * 20; // R$ 20 por canal adicional
-                    monthly += additionalChannelsCost;
-                }
-
-                if (sipWithEquipment && plan.channels > 0) {
-                    monthly += equipmentRentalCost * plan.channels;
-                }
-
-                const setup = sipIncludeSetup ? plan.setup : 0;
-                setSipResult({ setup, monthly, additionalChannelsCost });
-            } else {
-                setSipResult(null);
-            }
+        const plan = sipPlans.find(p => p.name === selectedSipPlan);
+        if (plan && !plan.monthlyWithEquipment && sipWithEquipment) {
+            setSipWithEquipment(false);
         } else {
-            setSipResult(null);
+            calculateSipPrice();
         }
     }, [selectedSipPlan, sipAdditionalChannels, sipWithEquipment, sipIncludeSetup]);
 
@@ -782,8 +809,8 @@ const PABXSIPCalculator: React.FC = () => {
                                                                 <SelectValue placeholder="Selecione um plano" />
                                                             </SelectTrigger>
                                                             <SelectContent className="bg-slate-800 text-white">
-                                                                {Object.entries(sipPlans).map(([key, plan]) => (
-                                                                    <SelectItem key={key} value={key}>{plan.name}</SelectItem>
+                                                                {sipPlans.map((plan) => (
+                                                                    <SelectItem key={plan.name} value={plan.name}>{plan.name}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -796,9 +823,32 @@ const PABXSIPCalculator: React.FC = () => {
                                                         <Label htmlFor="sip-additional-channels">Canais Adicionais</Label>
                                                         <Input id="sip-additional-channels" type="number" value={sipAdditionalChannels || ''} onChange={(e) => setSipAdditionalChannels(Number(e.target.value))} min="0" className="bg-slate-700 border-slate-600 mt-1" />
                                                     </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Checkbox id="sip-with-equipment" checked={sipWithEquipment} onCheckedChange={(checked) => setSipWithEquipment(!!checked)} className="border-white" />
-                                                        <Label htmlFor="sip-with-equipment">Incluir Equipamento (ATA/SBC)</Label>
+                                                    <div className="space-y-2">
+                                                        <Label className={!selectedSipPlan || !sipPlans.find(p => p.name === selectedSipPlan)?.monthlyWithEquipment ? 'text-gray-500' : ''}>
+                                                            Franquia/Assinatura Mensal
+                                                        </Label>
+                                                        <RadioGroup
+                                                            value={sipWithEquipment ? 'with' : 'without'}
+                                                            onValueChange={(value) => setSipWithEquipment(value === 'with')}
+                                                        >
+                                                            <div className="flex items-center space-x-2">
+                                                                <RadioGroupItem value="without" id="without-equipment" />
+                                                                <Label htmlFor="without-equipment">Sem Equipamentos</Label>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <RadioGroupItem 
+                                                                    value="with" 
+                                                                    id="with-equipment" 
+                                                                    disabled={!selectedSipPlan || !sipPlans.find(p => p.name === selectedSipPlan)?.monthlyWithEquipment}
+                                                                />
+                                                                <Label 
+                                                                    htmlFor="with-equipment" 
+                                                                    className={!selectedSipPlan || !sipPlans.find(p => p.name === selectedSipPlan)?.monthlyWithEquipment ? 'text-gray-500' : ''}
+                                                                >
+                                                                    Com Equipamentos
+                                                                </Label>
+                                                            </div>
+                                                        </RadioGroup>
                                                     </div>
                                                 </div>
                                             </CardContent>
