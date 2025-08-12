@@ -10,10 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
-    Wifi, 
-    Calculator, 
-    FileText, 
+import {
+    Wifi,
+    Calculator,
+    FileText,
     Plus,
     Edit,
     Search,
@@ -159,16 +159,16 @@ const FiberLinkCalculator: React.FC = () => {
     const handleAddProduct = () => {
         if (result) {
             const description = `Link via Fibra ${result.plan.description} - Contrato ${contractTerm} meses${includeInstallation ? ' (com instalação)' : ''}`;
-            
+
             setAddedProducts(prev => [...prev, {
                 id: generateUniqueId(),
                 type: 'FIBER',
                 description,
                 setup: result.installationCost,
                 monthly: result.monthlyPrice,
-                details: { 
-                    speed: selectedSpeed, 
-                    contractTerm, 
+                details: {
+                    speed: selectedSpeed,
+                    contractTerm,
                     includeInstallation,
                     paybackMonths: result.contractInfo?.paybackMonths || 0
                 }
@@ -339,20 +339,20 @@ const FiberLinkCalculator: React.FC = () => {
                             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="client-name">Nome do Cliente</Label>
-                                    <Input 
-                                        id="client-name" 
-                                        value={clientName} 
-                                        onChange={(e) => setClientName(e.target.value)} 
-                                        className="bg-slate-800 border-slate-700" 
+                                    <Input
+                                        id="client-name"
+                                        value={clientName}
+                                        onChange={(e) => setClientName(e.target.value)}
+                                        className="bg-slate-800 border-slate-700"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="account-manager">Gerente de Contas</Label>
-                                    <Input 
-                                        id="account-manager" 
-                                        value={accountManager} 
-                                        onChange={(e) => setAccountManager(e.target.value)} 
-                                        className="bg-slate-800 border-slate-700" 
+                                    <Input
+                                        id="account-manager"
+                                        value={accountManager}
+                                        onChange={(e) => setAccountManager(e.target.value)}
+                                        className="bg-slate-800 border-slate-700"
                                     />
                                 </div>
                             </CardContent>
@@ -363,7 +363,7 @@ const FiberLinkCalculator: React.FC = () => {
                                 <TabsTrigger value="calculator">Calculadora</TabsTrigger>
                                 <TabsTrigger value="list-price">List Price</TabsTrigger>
                             </TabsList>
-                            
+
                             <TabsContent value="calculator">
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
                                     {/* Calculadora */}
@@ -406,11 +406,11 @@ const FiberLinkCalculator: React.FC = () => {
                                                 </div>
 
                                                 <div className="flex items-center space-x-2 pt-2">
-                                                    <Checkbox 
-                                                        id="includeInstallation" 
-                                                        checked={includeInstallation} 
-                                                        onCheckedChange={(checked) => setIncludeInstallation(!!checked)} 
-                                                        className="border-white" 
+                                                    <Checkbox
+                                                        id="includeInstallation"
+                                                        checked={includeInstallation}
+                                                        onCheckedChange={(checked) => setIncludeInstallation(!!checked)}
+                                                        className="border-white"
                                                     />
                                                     <label htmlFor="includeInstallation" className="text-sm font-medium leading-none">
                                                         Incluir Taxa de Instalação
@@ -419,12 +419,12 @@ const FiberLinkCalculator: React.FC = () => {
 
                                                 <div>
                                                     <Label htmlFor="project-value">Valor do Projeto (opcional)</Label>
-                                                    <Input 
-                                                        id="project-value" 
-                                                        type="number" 
-                                                        value={projectValue || ''} 
-                                                        onChange={(e) => setProjectValue(Number(e.target.value))} 
-                                                        className="bg-slate-700" 
+                                                    <Input
+                                                        id="project-value"
+                                                        type="number"
+                                                        value={projectValue || ''}
+                                                        onChange={(e) => setProjectValue(Number(e.target.value))}
+                                                        className="bg-slate-700"
                                                         placeholder="Para cálculo da taxa de instalação"
                                                     />
                                                 </div>
@@ -436,28 +436,28 @@ const FiberLinkCalculator: React.FC = () => {
                                                     <div className="text-lg font-bold mb-2">Resultado:</div>
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between">
-                                                            <span>Velocidade:</span> 
+                                                            <span>Velocidade:</span>
                                                             <span>{result.plan.description}</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span>Prazo:</span> 
+                                                            <span>Prazo:</span>
                                                             <span>{contractTerm} meses (Payback: {result.contractInfo?.paybackMonths} meses)</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span>Taxa de Instalação:</span> 
+                                                            <span>Taxa de Instalação:</span>
                                                             <span>{formatCurrency(result.installationCost)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-green-400 font-bold">
-                                                            <span>Valor Mensal:</span> 
+                                                            <span>Valor Mensal:</span>
                                                             <span>{formatCurrency(result.monthlyPrice)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-blue-400 font-bold">
-                                                            <span>Total 1º Mês:</span> 
+                                                            <span>Total 1º Mês:</span>
                                                             <span>{formatCurrency(result.totalFirstMonth)}</span>
                                                         </div>
                                                     </div>
-                                                    <Button 
-                                                        onClick={handleAddProduct} 
+                                                    <Button
+                                                        onClick={handleAddProduct}
                                                         className="w-full mt-4 bg-green-600 hover:bg-green-700"
                                                     >
                                                         Adicionar à Proposta
@@ -481,9 +481,9 @@ const FiberLinkCalculator: React.FC = () => {
                                                         <div key={product.id} className="border border-slate-700 rounded p-4">
                                                             <div className="flex justify-between items-start mb-2">
                                                                 <h4 className="font-semibold">{product.description}</h4>
-                                                                <Button 
-                                                                    variant="outline" 
-                                                                    size="sm" 
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
                                                                     onClick={() => handleRemoveProduct(product.id)}
                                                                     className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
                                                                 >
@@ -502,7 +502,7 @@ const FiberLinkCalculator: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    
+
                                                     <Separator className="bg-slate-700" />
                                                     <div className="space-y-2 font-bold">
                                                         <div className="flex justify-between">

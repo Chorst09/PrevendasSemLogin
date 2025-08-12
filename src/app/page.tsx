@@ -11,7 +11,7 @@ import {
     Trash2, Edit, Building, ShoppingCart, ExternalLink, FileDown, Paperclip,
     X, Server, Headset, Printer, ChevronDown, Tag, Info, Settings, FileText,
     BarChart2, TrendingUp, Percent, ShoppingBag, Repeat, Wrench, Zap,
-    CheckCircle, Award, Gavel, Moon, Sun, Brain, Phone, Wifi, Radio // Ícones para o botão de tema
+    CheckCircle, Award, Gavel, Moon, Sun, Brain, Phone, Wifi, Radio, CheckSquare, BarChart3 // Ícones para o botão de tema
 } from 'lucide-react'; // Importe todos os ícones usados diretamente aqui
 
 // Importe seus componentes de UI
@@ -33,7 +33,6 @@ import BidsDocumentationView from '@/components/bids/BidsDocumentationView';
 import RFPView from '@/components/rfp/RFPView';
 import PriceRecordView from '@/components/price-records/PriceRecordView';
 import EditalAnalysisView from '@/components/edital-analysis/EditalAnalysisView';
-import EditalAnalyzer from '@/components/edital-analyzer/EditalAnalyzer';
 import VMCalculator from '@/components/calculators/VMCalculator';
 import PABXSIPCalculator from '@/components/calculators/PABXSIPCalculator';
 import FiberLinkCalculator from '@/components/calculators/FiberLinkCalculator';
@@ -125,8 +124,10 @@ export default function App() { // Ou Home
                 { id: 'bids-docs', label: 'Documentações para Editais', icon: <FileText size={16} /> },
             ]
         },
+        { id: 'price-records', label: 'Atas de Registro de Preços', icon: <Award size={20} /> },
         { id: 'rfp', label: 'RFP/RFI', icon: <FileText size={20} /> },
-        { id: 'price-records', label: 'Atas de Registros de Preços', icon: <Award size={20} /> },
+        { id: 'it-assessment', label: 'Assessment de TI', icon: <CheckSquare size={20} /> },
+        { id: 'poc', label: 'Provas de Conceito POC', icon: <BarChart3 size={20} /> },
     ];
 
     // Lógica para encontrar o item de navegação atual (adapte)
@@ -162,7 +163,7 @@ export default function App() { // Ou Home
             case 'calculator-radio-internet': return <RadioInternetCalculator />;
             case 'calculator-servicedesk': return <CalculatorFrame src="https://precificaservicedesk.netlify.app/" title="Precificação Service Desk" />;
             case 'calculator-printer': return <CalculatorFrame src="https://precificalocacaoprinters.netlify.app/" title="Outsourcing de Impressão" />;
-            case 'bids-analyzer': return <EditalAnalyzer />;
+            case 'bids-analyzer': return <iframe src="/edital-analyzer.html" className="w-full h-screen border-0" title="Analisador de Editais" />;
             case 'bids-analysis': return <EditalAnalysisView
                 editais={editais}
                 onAdd={(edital) => setEditais(prev => [...prev, { ...edital, id: `EDT-${Date.now()}` }])}
@@ -172,6 +173,8 @@ export default function App() { // Ou Home
             />;
             case 'bids-docs': return <BidsDocumentationView docs={initialBidDocs} onDocsChange={setBidDocs} />; // Adapte se os docs vierem de outro lugar
             case 'rfp': return <RFPView rfps={rfps} onAdd={(rfp) => setRfps(prev => [...prev, { ...rfp, id: `RFP-${Date.now()}` }])} onUpdate={(id, rfp) => setRfps(prev => prev.map(r => r.id === id ? { ...rfp, id } : r))} onDelete={(id) => setRfps(prev => prev.filter(r => r.id !== id))} />;
+            case 'it-assessment': return <iframe src="/it-assessment.html" className="w-full h-screen border-0" title="Assessment de TI" />;
+            case 'poc': return <iframe src="/poc-management.html" className="w-full h-screen border-0" title="Provas de Conceito POC" />;
             case 'price-records': return <PriceRecordView priceRecords={priceRecords} onAdd={(priceRecord) => setPriceRecords(prev => [...prev, { ...priceRecord, id: `ATA-${Date.now()}` }])} onUpdate={(id, priceRecord) => setPriceRecords(prev => prev.map(r => r.id === id ? { ...priceRecord, id } : r))} onDelete={(id) => setPriceRecords(prev => prev.filter(r => r.id !== id))} />;
             default: return <DashboardView salesData={salesData} quoteStatusData={quoteStatusData} partners={partners} ros={ros} />;
         }
