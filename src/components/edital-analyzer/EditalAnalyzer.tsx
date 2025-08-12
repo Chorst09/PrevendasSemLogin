@@ -761,89 +761,168 @@ const EditalAnalyzer: React.FC = () => {
   // Extrair informações gerais do edital
   const extractGeneralInfo = (text: string) => {
     console.log('🔍 Extraindo informações gerais do edital...');
+    console.log(`📄 Texto para análise: ${text.length} caracteres`);
     
-    // Extrair número do edital
+    // Normalizar texto para melhor busca
+    const normalizedText = text.replace(/\s+/g, ' ').replace(/\n+/g, ' ');
+    
+    // Extrair número do edital - padrões mais abrangentes
     const editalNumberPatterns = [
-      /(?:edital|pregão|concorrência|tomada de preços?)\s*n[°º]?\s*(\d+(?:\/\d{4})?)/gi,
-      /(?:processo|licitação)\s*n[°º]?\s*(\d+(?:\/\d{4})?)/gi,
-      /n[°º]?\s*(\d+\/\d{4})/gi
+      /(?:edital|pregão|concorrência|tomada\s+de\s+preços?|convite|carta\s+convite)\s*(?:eletrônico\s*)?n[°º]?\s*(\d+(?:[-\/]\d{4})?)/gi,
+      /(?:processo|licitação|pe)\s*n[°º]?\s*(\d+(?:[-\/]\d{4})?)/gi,
+      /n[°º]?\s*(\d+[-\/]\d{4})/gi,
+      /(\d{3,6}[-\/]\d{4})/g, // Padrão genérico para números com ano
+      /(?:número|num|nº|n°)\s*(\d+(?:[-\/]\d{4})?)/gi
     ];
     
     let editalNumber = '';
-    for (const pattern of editalNumberPatterns) {
-      const match = pattern.exec(text);
-      if (match) {
-        editalNumber = match[1];
-        break;
-      }
-    }
+    let bestMatch = '';
+    
+    editalNumberPatterns.forEach(pattern => {
+      const matches = [...normalizedText.matchAll(pattern)];
+      matches.forEach(match => {
+        const candidate = match[1];
+        if (candidate && candidate.length > bestMatch.length) {
+          bestMatch = candidate;
+          editalNumber = candidate;
+        }
+      });
+    });
 
-    // Extrair data e horário de início
+    console.log(`📋 Número do edital encontrado: "${editalNumber}"`);
+
+    // Extrair data e horário de início - busca mais flexível
     const dateTimePatterns = [
-      /(?:data|início|abertura).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(?:às|horário|hora).*?(\d{1,2}:\d{2})/gi,
-      /(\d{1,2}\/\d{1,2}\/\d{4}).*?(?:às|horário|hora).*?(\d{1,2}:\d{2})/gi,
-      /(?:sessão|abertura).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi
+      /(?:data|início|abertura|sessão|realização)[\s\S]{0,50}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})[\s\S]{0,50}?(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+      /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})[\s\S]{0,100}?(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+      /(?:sessão|abertura|início)[\s\S]{0,100}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/gi,
+      /(?:dia|data)[\s\S]{0,50}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/gi
     ];
     
     let startDate = '';
     let startTime = '';
-    for (const pattern of dateTimePatterns) {
-      const match = pattern.exec(text);
-      if (match) {
-        startDate = match[1];
-        startTime = match[2];
-        break;
+    
+    dateTimePatterns.forEach(pattern => {
+      if (!startDate) {
+        const match = pattern.exec(normalizedText);
+        if (match) {
+          startDate = match[1];
+          if (match[2]) startTime = match[2];
+        }
       }
+    });
+
+    // Buscar horário separadamente se não encontrou junto com a data
+    if (startDate && !startTime) {
+      const timePatterns = [
+        /(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+        /(\d{1,2}:\d{2})\s*(?:h|horas?)/gi,
+        /(\d{1,2}h\d{2})/gi
+      ];
+      
+      timePatterns.forEach(pattern => {
+        if (!startTime) {
+          const match = pattern.exec(normalizedText);
+          if (match) {
+            startTime = match[1].replace('h', ':');
+          }
+        }
+      });
     }
 
-    // Extrair portal/plataforma
+    console.log(`📅 Data/hora encontrada: "${startDate}" às "${startTime}"`);
+
+    // Extrair portal/plataforma - busca mais abrangente
     const portalPatterns = [
-      /(?:portal|plataforma|sistema).*?(comprasnet|licitações-e|bec|bancoob|bb|caixa|portal nacional)/gi,
-      /(?:www\.|https?:\/\/)([a-zA-Z0-9.-]+\.(?:gov\.br|com\.br|org\.br))/gi,
-      /(?:comprasnet|licitações-e|bec|bancoob|bb|caixa)/gi
+      /(?:portal|plataforma|sistema|site|endereço|url)[\s\S]{0,100}?(comprasnet|licitações-e|bec|bancoob|bb|caixa|portal\s+nacional|gov\.br)/gi,
+      /(www\.[a-zA-Z0-9.-]+\.(?:gov\.br|com\.br|org\.br))/gi,
+      /(https?:\/\/[a-zA-Z0-9.-]+\.(?:gov\.br|com\.br|org\.br))/gi,
+      /(?:comprasnet|licitações-e|bec|bancoob|bb|caixa)/gi,
+      /([a-zA-Z0-9.-]+\.gov\.br)/gi
     ];
     
     let portal = '';
-    for (const pattern of portalPatterns) {
-      const match = pattern.exec(text);
-      if (match) {
-        portal = match[1] || match[0];
-        break;
+    
+    portalPatterns.forEach(pattern => {
+      if (!portal) {
+        const match = pattern.exec(normalizedText);
+        if (match) {
+          portal = match[1] || match[0];
+          // Limpar o resultado
+          portal = portal.replace(/^(www\.|https?:\/\/)/, '').toLowerCase();
+        }
       }
-    }
+    });
 
-    // Extrair prazo para cadastro de proposta
+    console.log(`🌐 Portal encontrado: "${portal}"`);
+
+    // Extrair prazo para cadastro de proposta - busca mais flexível
     const proposalDeadlinePatterns = [
-      /(?:prazo|até|limite).*?(?:proposta|lance|oferta).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi,
-      /(?:proposta|lance|oferta).*?(?:até|limite).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi,
-      /(?:encerramento|fim).*?(?:proposta|lance).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi
+      /(?:prazo|até|limite|encerramento)[\s\S]{0,100}?(?:proposta|lance|oferta|participação)[\s\S]{0,100}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})[\s\S]{0,50}?(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+      /(?:proposta|lance|oferta)[\s\S]{0,100}?(?:até|limite|prazo)[\s\S]{0,100}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})[\s\S]{0,50}?(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+      /(?:encerramento|fim|término)[\s\S]{0,100}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})[\s\S]{0,50}?(?:às|horário|hora|h)[\s\S]{0,20}?(\d{1,2}:\d{2})/gi,
+      /(?:recebimento|aceite)[\s\S]{0,100}?(?:proposta|lance)[\s\S]{0,100}?(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/gi
     ];
     
     let proposalDeadlineDate = '';
     let proposalDeadlineTime = '';
-    for (const pattern of proposalDeadlinePatterns) {
-      const match = pattern.exec(text);
-      if (match) {
-        proposalDeadlineDate = match[1];
-        proposalDeadlineTime = match[2];
-        break;
+    
+    proposalDeadlinePatterns.forEach(pattern => {
+      if (!proposalDeadlineDate) {
+        const match = pattern.exec(normalizedText);
+        if (match) {
+          proposalDeadlineDate = match[1];
+          if (match[2]) proposalDeadlineTime = match[2];
+        }
       }
-    }
+    });
 
-    // Extrair valor máximo do edital
+    console.log(`⏰ Prazo proposta encontrado: "${proposalDeadlineDate}" às "${proposalDeadlineTime}"`);
+
+    // Extrair valor máximo do edital - busca mais abrangente
     const maxValuePatterns = [
-      /(?:valor\s+(?:máximo|estimado|total|global)).*?R\$\s*([\d.,]+)/gi,
-      /(?:orçamento\s+(?:estimado|total)).*?R\$\s*([\d.,]+)/gi,
-      /(?:limite\s+(?:orçamentário|de\s+gastos?)).*?R\$\s*([\d.,]+)/gi,
-      /R\$\s*([\d.,]+).*?(?:valor\s+(?:máximo|total|estimado))/gi
+      /(?:valor|orçamento|limite)[\s\S]{0,100}?(?:máximo|estimado|total|global|previsto)[\s\S]{0,100}?R\$\s*([\d.,]+)/gi,
+      /(?:orçamento|valor)[\s\S]{0,100}?(?:estimado|total|previsto)[\s\S]{0,100}?R\$\s*([\d.,]+)/gi,
+      /(?:limite|teto)[\s\S]{0,100}?(?:orçamentário|de\s+gastos?)[\s\S]{0,100}?R\$\s*([\d.,]+)/gi,
+      /R\$\s*([\d.,]+)[\s\S]{0,100}?(?:valor|orçamento)[\s\S]{0,50}?(?:máximo|total|estimado|global)/gi,
+      /(?:total|valor)[\s\S]{0,50}?R\$\s*([\d.,]+)/gi,
+      /R\$\s*([\d.,]+(?:\.\d{3})*,\d{2})/gi // Padrão para valores formatados
     ];
     
     let maxValue = '';
-    for (const pattern of maxValuePatterns) {
-      const match = pattern.exec(text);
-      if (match) {
-        maxValue = `R$ ${match[1]}`;
-        break;
+    let highestValue = 0;
+    
+    maxValuePatterns.forEach(pattern => {
+      const matches = [...normalizedText.matchAll(pattern)];
+      matches.forEach(match => {
+        const valueStr = match[1];
+        if (valueStr) {
+          // Converter para número para comparar
+          const numValue = parseFloat(valueStr.replace(/\./g, '').replace(',', '.'));
+          if (numValue > highestValue) {
+            highestValue = numValue;
+            maxValue = `R$ ${valueStr}`;
+          }
+        }
+      });
+    });
+
+    console.log(`💰 Valor máximo encontrado: "${maxValue}"`);
+
+    // Buscar informações adicionais se não encontrou as principais
+    if (!editalNumber) {
+      const fallbackNumbers = normalizedText.match(/\d{3,6}[-\/]\d{4}/g);
+      if (fallbackNumbers && fallbackNumbers.length > 0) {
+        editalNumber = fallbackNumbers[0];
+        console.log(`📋 Número alternativo encontrado: "${editalNumber}"`);
+      }
+    }
+
+    if (!startDate) {
+      const fallbackDates = normalizedText.match(/\d{1,2}[-\/]\d{1,2}[-\/]\d{4}/g);
+      if (fallbackDates && fallbackDates.length > 0) {
+        startDate = fallbackDates[0];
+        console.log(`📅 Data alternativa encontrada: "${startDate}"`);
       }
     }
 
@@ -862,12 +941,162 @@ const EditalAnalyzer: React.FC = () => {
     };
   };
 
-  // Gerar resumo dos itens
+  // Gerar resumo dos itens - versão melhorada
   const generateItemSummary = (text: string): string => {
+    console.log('📦 Gerando resumo dos itens...');
+    
+    const normalizedText = text.replace(/\s+/g, ' ');
+    
+    // Padrões mais abrangentes para identificar itens
     const itemPatterns = [
-      /(?:ITEM|LOTE)\s+\d+.*?([A-ZÁÊÇÕ][A-Za-záêçõ\s]{10,80})/gi,
-      /(\d+\.\d+)\s+([A-ZÁÊÇÕ][A-Za-záêçõ\s]{10,80})/gi
+      // Padrões específicos para itens numerados
+      /(?:ITEM|LOTE|GRUPO)\s+(\d+(?:\.\d+)?)\s*[-–]\s*([A-ZÁÊÇÕ][^(\n]{10,120}?)(?:\s*\((?:Qtd?:?\s*)?(\d+)(?:\s+(?:unidades?|un|pcs?|peças?))?\))?/gi,
+      /(?:ITEM|LOTE|GRUPO)\s+(\d+(?:\.\d+)?)\s*[:\-–]\s*([A-ZÁÊÇÕ][^(\n]{10,120})/gi,
+      /(\d+\.\d+)\s*[-–]\s*([A-ZÁÊÇÕ][^(\n]{10,120}?)(?:\s*\((?:Qtd?:?\s*)?(\d+)(?:\s+(?:unidades?|un|pcs?))?\))?/gi,
+      /(\d+\.\d+)\s+([A-ZÁÊÇÕ][A-Za-záêçõ\s]{15,120})/gi,
+      
+      // Padrões para listas com marcadores
+      /[-•]\s*([A-ZÁÊÇÕ][A-Za-záêçõ\s]{15,120}?)(?:\s*[-–]\s*(\d+)\s*(?:unidades?|un|pcs?))?/gi,
+      
+      // Padrões para descrições de equipamentos
+      /(?:servidor|switch|roteador|firewall|storage|notebook|desktop|impressora|scanner|monitor|projetor|access\s+point|wifi|telefone|câmera|no-break|estabilizador)[\s\w]{10,120}/gi,
+      
+      // Padrões genéricos para capturar descrições técnicas
+      /([A-ZÁÊÇÕ][A-Za-záêçõ\s]{20,120}?(?:servidor|switch|roteador|firewall|storage|notebook|desktop|impressora|scanner|monitor|projetor|access\s+point|wifi|telefone|câmera|no-break|estabilizador)[A-Za-záêçõ\s]{0,50})/gi
     ];
+    
+    const items: string[] = [];
+    const categories = new Set<string>();
+    const quantities = new Map<string, number>();
+    
+    console.log(`📄 Processando texto de ${normalizedText.length} caracteres`);
+    
+    itemPatterns.forEach((pattern, index) => {
+      console.log(`🔍 Testando padrão ${index + 1}`);
+      const matches = [...normalizedText.matchAll(pattern)];
+      console.log(`📋 Padrão ${index + 1} encontrou ${matches.length} matches`);
+      
+      matches.forEach(match => {
+        let itemName = '';
+        let quantity = 0;
+        
+        // Extrair nome do item baseado no padrão
+        if (match[2]) {
+          itemName = match[2].trim();
+          if (match[3]) quantity = parseInt(match[3]);
+        } else if (match[1]) {
+          itemName = match[1].trim();
+          if (match[2] && !isNaN(parseInt(match[2]))) {
+            quantity = parseInt(match[2]);
+          }
+        }
+        
+        // Limpar e validar o nome do item
+        itemName = itemName
+          .replace(/^\d+\.\d+\s*[-–]\s*/, '') // Remove numeração inicial
+          .replace(/\s*\([^)]*\)\s*$/, '') // Remove parênteses no final
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Validar se é um item válido
+        if (itemName.length >= 15 && itemName.length <= 150 && 
+            !items.some(existing => existing.toLowerCase().includes(itemName.toLowerCase().substring(0, 20))) &&
+            items.length < 15) {
+          
+          items.push(itemName);
+          if (quantity > 0) quantities.set(itemName, quantity);
+          
+          console.log(`✅ Item adicionado: "${itemName}" (Qtd: ${quantity})`);
+          
+          // Categorizar item de forma mais inteligente
+          const itemLower = itemName.toLowerCase();
+          if (itemLower.includes('servidor') || itemLower.includes('server') || itemLower.includes('blade')) {
+            categories.add('Servidores');
+          } else if (itemLower.includes('switch') || itemLower.includes('roteador') || itemLower.includes('router') || 
+                     itemLower.includes('firewall') || itemLower.includes('access point') || itemLower.includes('wifi')) {
+            categories.add('Equipamentos de Rede');
+          } else if (itemLower.includes('storage') || itemLower.includes('san') || itemLower.includes('nas') || 
+                     itemLower.includes('backup') || itemLower.includes('armazenamento')) {
+            categories.add('Armazenamento');
+          } else if (itemLower.includes('notebook') || itemLower.includes('laptop') || itemLower.includes('desktop') || 
+                     itemLower.includes('computador') || itemLower.includes('workstation')) {
+            categories.add('Equipamentos de Usuário');
+          } else if (itemLower.includes('impressora') || itemLower.includes('scanner') || itemLower.includes('multifuncional')) {
+            categories.add('Periféricos');
+          } else if (itemLower.includes('monitor') || itemLower.includes('display') || itemLower.includes('projetor') || 
+                     itemLower.includes('tv') || itemLower.includes('tela')) {
+            categories.add('Dispositivos de Exibição');
+          } else if (itemLower.includes('software') || itemLower.includes('licença') || itemLower.includes('sistema') || 
+                     itemLower.includes('aplicativo')) {
+            categories.add('Software e Licenças');
+          } else if (itemLower.includes('telefone') || itemLower.includes('voip') || itemLower.includes('pabx')) {
+            categories.add('Telefonia');
+          } else if (itemLower.includes('câmera') || itemLower.includes('cftv') || itemLower.includes('vigilância') || 
+                     itemLower.includes('segurança')) {
+            categories.add('Segurança');
+          } else if (itemLower.includes('no-break') || itemLower.includes('nobreak') || itemLower.includes('ups') || 
+                     itemLower.includes('estabilizador') || itemLower.includes('fonte')) {
+            categories.add('Energia');
+          } else {
+            categories.add('Outros Equipamentos');
+          }
+        } else if (itemName.length > 0) {
+          console.log(`❌ Item rejeitado: "${itemName}" (tamanho: ${itemName.length})`);
+        }
+      });
+    });
+
+    console.log(`📦 Total de itens encontrados: ${items.length}`);
+    console.log(`🏷️ Categorias identificadas: ${Array.from(categories).join(', ')}`);
+
+    if (items.length === 0) {
+      // Tentar uma busca mais genérica se não encontrou nada
+      const fallbackPatterns = [
+        /([A-ZÁÊÇÕ][A-Za-záêçõ\s]{25,100})/g
+      ];
+      
+      fallbackPatterns.forEach(pattern => {
+        if (items.length === 0) {
+          const matches = [...normalizedText.matchAll(pattern)];
+          matches.slice(0, 5).forEach(match => {
+            const candidate = match[1].trim();
+            if (candidate.length >= 25 && candidate.length <= 100) {
+              items.push(candidate);
+            }
+          });
+        }
+      });
+      
+      if (items.length === 0) {
+        return 'Itens não identificados automaticamente. Recomenda-se verificar o documento manualmente para extrair a lista de produtos/serviços.';
+      }
+    }
+
+    const categoryList = Array.from(categories).join(', ');
+    const itemCount = items.length;
+    const firstItems = items.slice(0, 5);
+    
+    // Incluir quantidades se disponíveis
+    const itemsWithQty = firstItems.map(item => {
+      const qty = quantities.get(item);
+      return qty ? `${item} (${qty} un)` : item;
+    });
+    
+    const itemsList = itemsWithQty.join('; ');
+    const totalQuantity = Array.from(quantities.values()).reduce((sum, qty) => sum + qty, 0);
+    
+    let summary = `Identificados ${itemCount} itens principais`;
+    if (totalQuantity > 0) {
+      summary += ` (total: ${totalQuantity} unidades)`;
+    }
+    summary += `: ${itemsList}${itemCount > 5 ? '...' : ''}`;
+    
+    if (categories.size > 0) {
+      summary += `. Categorias: ${categoryList}`;
+    }
+    
+    return summary;
+  };
     
     const items: string[] = [];
     const categories = new Set<string>();
@@ -981,6 +1210,9 @@ const EditalAnalyzer: React.FC = () => {
     let summary = '';
 
     if (analysisType === 'geral' && generalInfo) {
+      console.log('📊 Construindo resultado da análise geral...');
+      console.log('📋 Informações extraídas:', generalInfo);
+      
       summary = `Análise geral do edital "${selectedFile!.name}" concluída com extração de informações chave.`;
       keyPoints = [
         `📋 Número do Edital: ${generalInfo.editalNumber}`,
@@ -990,6 +1222,15 @@ const EditalAnalyzer: React.FC = () => {
         `💰 Valor Máximo: ${generalInfo.maxValue}`,
         `📦 Resumo dos Itens: ${generalInfo.itemSummary}`
       ];
+      
+      // Adicionar informações de debug se necessário
+      if (generalInfo.editalNumber === 'Não identificado' || 
+          generalInfo.startDate === 'Não identificado' || 
+          generalInfo.portal === 'Não identificado') {
+        keyPoints.push(`⚠️ Algumas informações não foram identificadas automaticamente. Verifique o documento manualmente.`);
+      }
+      
+      console.log('✅ Resultado da análise geral construído:', keyPoints);
     } else {
       summary = `Análise realizada do arquivo "${selectedFile!.name}". Identificados ${products.length} itens técnicos com especificações extraídas do documento real.`;
       keyPoints = [
