@@ -11,7 +11,7 @@ import {
     Trash2, Edit, Building, ShoppingCart, ExternalLink, FileDown, Paperclip,
     X, Server, Headset, Printer, ChevronDown, Tag, Info, Settings, FileText,
     BarChart2, TrendingUp, Percent, ShoppingBag, Repeat, Wrench, Zap,
-    CheckCircle, Award, Gavel, Moon, Sun, Brain, Phone, Wifi // Ícones para o botão de tema
+    CheckCircle, Award, Gavel, Moon, Sun, Brain, Phone, Wifi, Radio // Ícones para o botão de tema
 } from 'lucide-react'; // Importe todos os ícones usados diretamente aqui
 
 // Importe seus componentes de UI
@@ -37,6 +37,7 @@ import EditalAnalyzer from '@/components/edital-analyzer/EditalAnalyzer';
 import VMCalculator from '@/components/calculators/VMCalculator';
 import PABXSIPCalculator from '@/components/calculators/PABXSIPCalculator';
 import FiberLinkCalculator from '@/components/calculators/FiberLinkCalculator';
+import RadioInternetCalculator from '@/components/calculators/RadioInternetCalculator';
 
 // Importe dados e tipos se ainda usados aqui
 import type { Partner, Quote, RO, Training, BidDocs, NavItem, NavSubItem, Proposal, RFP, PriceRecord, Edital } from '@/lib/types';
@@ -109,6 +110,7 @@ export default function App() { // Ou Home
                 { id: 'calculator-vm', label: 'VM', icon: <Server size={16} /> },
                 { id: 'calculator-pabx-sip', label: 'PABX/SIP', icon: <Phone size={16} /> },
                 { id: 'calculator-fiber-link', label: 'Link via Fibra', icon: <Wifi size={16} /> },
+                { id: 'calculator-radio-internet', label: 'Internet via Rádio', icon: <Radio size={16} /> },
                 { id: 'calculator-servicedesk', label: 'Service Desk', icon: <Headset size={16} /> },
                 { id: 'calculator-printer', label: 'Outsourcing de Impressão', icon: <Printer size={16} /> },
             ]
@@ -157,6 +159,7 @@ export default function App() { // Ou Home
             case 'calculator-vm': return <VMCalculator />;
             case 'calculator-pabx-sip': return <PABXSIPCalculator />;
             case 'calculator-fiber-link': return <FiberLinkCalculator />;
+            case 'calculator-radio-internet': return <RadioInternetCalculator />;
             case 'calculator-servicedesk': return <CalculatorFrame src="https://precificaservicedesk.netlify.app/" title="Precificação Service Desk" />;
             case 'calculator-printer': return <CalculatorFrame src="https://precificalocacaoprinters.netlify.app/" title="Outsourcing de Impressão" />;
             case 'bids-analyzer': return <EditalAnalyzer />;
