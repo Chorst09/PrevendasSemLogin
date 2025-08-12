@@ -30,6 +30,7 @@ body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
 <h1 class="text-3xl md:text-4xl font-bold text-white">Analisador de Editais e TDR com IA</h1>
 <p class="mt-2 text-lg text-slate-400">Carregue um arquivo para uma análise inteligente e direcionada.</p>
 </header>
+
 <main id="main-content">
 <div id="upload-section" class="max-w-4xl mx-auto bg-slate-800 p-6 md:p-8 rounded-xl shadow-lg">
 <div id="drop-zone" class="drop-zone w-full rounded-lg p-10 text-center cursor-pointer">
@@ -46,6 +47,7 @@ body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
 Anexar Arquivo
 </button>
 </div>
+
 <div class="mt-8">
 <h3 class="text-xl font-semibold text-white text-center mb-8">Selecione o Tipo de Análise</h3>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -55,14 +57,16 @@ Anexar Arquivo
 <span class="font-bold text-xl block text-white mb-2">Análise Geral</span>
 <span class="text-slate-300">Extrai dados chave do edital.</span>
 </label>
-</div><d
-iv class="analysis-option">
+</div>
+
+<div class="analysis-option">
 <input type="radio" name="analysis_type" id="type_tdr" value="tdr" class="hidden">
 <label for="type_tdr" class="block w-full p-4 border-2 rounded-lg cursor-pointer text-center hover:border-indigo-500 h-full">
 <span class="font-bold block">Termo de Referência</span>
 <span class="text-sm text-slate-400">Resume itens e especificações.</span>
 </label>
 </div>
+
 <div class="analysis-option">
 <input type="radio" name="analysis_type" id="type_docs" value="docs" class="hidden">
 <label for="type_docs" class="block w-full p-4 border-2 rounded-lg cursor-pointer text-center hover:border-indigo-500 h-full">
@@ -70,6 +74,7 @@ iv class="analysis-option">
 <span class="text-sm text-slate-400">Extrai docs de habilitação (IA).</span>
 </label>
 </div>
+
 <div class="analysis-option">
 <input type="radio" name="analysis_type" id="type_products" value="products" class="hidden">
 <label for="type_products" class="block w-full p-4 border-2 rounded-lg cursor-pointer text-center hover:border-indigo-500 h-full">
@@ -79,21 +84,37 @@ iv class="analysis-option">
 </div>
 </div>
 </div>
+
 <div class="mt-8 text-center">
 <button id="analyze-button" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-500 transition-transform transform hover:scale-105 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed" disabled>
 Analisar Arquivo
 </button>
 </div>
 </div>
+
 <div id="loading-spinner" class="hidden flex-col items-center justify-center my-12">
 <div class="loader"></div>
 <p id="loading-text" class="mt-4 text-slate-400 font-medium">Analisando o documento... Por favor, aguarde.</p>
+<button id="cancel-analysis-button" class="mt-4 bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-700 transition inline-flex items-center gap-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+</svg>
+Voltar
+</button>
 </div>
+
 <div id="error-message" class="hidden max-w-3xl mx-auto mt-8 p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-md"></div>
+
 <div id="results-section" class="hidden mt-10">
 <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
 <h2 class="text-2xl font-bold text-white">Resultados da Análise</h2>
 <div class="flex gap-2">
+<button id="back-button" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition inline-flex items-center gap-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+</svg>
+Voltar
+</button>
 <button id="print-button" class="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition">
 Imprimir Resumo
 </button>
@@ -110,12 +131,14 @@ Analisar Outro Arquivo
 </div>
 </div>
 </main>
+
 <footer class="text-center mt-12 text-sm text-slate-500">
 <p>&copy; 2024 Analisador de Editais. Todos os direitos reservados.</p>
 <p class="text-xs mt-1">As sugestões de produtos são geradas por IA e não constituem uma recomendação formal.</p>
 </footer>
-</div><scri
-pt>
+</div>
+
+<script>
 // Initialize PDF.js worker
 const pdfjsLib = window['pdfjs-dist/build/pdf'];
 if (pdfjsLib) {
@@ -152,8 +175,11 @@ const UIManager = {
         errorMessageEl: document.getElementById('error-message'),
         resetButton: document.getElementById('reset-button'),
         printButton: document.getElementById('print-button'),
+        backButton: document.getElementById('back-button'),
+        cancelAnalysisButton: document.getElementById('cancel-analysis-button'),
         dropZoneText: document.getElementById('drop-zone-text'),
         dropZoneSubtext: document.getElementById('drop-zone-subtext'),
+        attachFileBtn: document.getElementById('attach-file-btn'),
     },
 
     showLoading(message) {
@@ -188,16 +214,15 @@ const UIManager = {
         this.elements.analyzeButton.disabled = false;
         
         // Update button text and style
-        const attachBtn = document.getElementById('attach-file-btn');
-        if (attachBtn) {
-            attachBtn.innerHTML = `
+        if (this.elements.attachFileBtn) {
+            this.elements.attachFileBtn.innerHTML = `
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Arquivo Anexado
             `;
-            attachBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-            attachBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            this.elements.attachFileBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            this.elements.attachFileBtn.classList.add('bg-green-600', 'hover:bg-green-700');
         }
         
         // Change drop zone appearance
@@ -214,16 +239,15 @@ const UIManager = {
         this.elements.resultsSection.classList.add('hidden');
         
         // Reset button appearance
-        const attachBtn = document.getElementById('attach-file-btn');
-        if (attachBtn) {
-            attachBtn.innerHTML = `
+        if (this.elements.attachFileBtn) {
+            this.elements.attachFileBtn.innerHTML = `
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
                 Anexar Arquivo
             `;
-            attachBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            attachBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            this.elements.attachFileBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            this.elements.attachFileBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
         }
         
         // Reset drop zone appearance
@@ -232,8 +256,19 @@ const UIManager = {
         
         this.hideLoading();
         this.hideError();
-    },    rend
-erResults(analysis) {
+    },
+
+    goBackToUpload() {
+        this.elements.resultsSection.classList.add('hidden');
+        this.elements.loadingSpinner.classList.add('hidden');
+        this.elements.uploadSection.classList.remove('hidden');
+        this.hideError();
+        
+        // Keep the file selected but allow user to change analysis type or upload new file
+        console.log('Voltando para a tela de upload');
+    },
+
+    renderResults(analysis) {
         let summaryHtml = '';
         appState.displayedProductItems = [];
 
@@ -257,12 +292,6 @@ erResults(analysis) {
 
         if (!this.elements.analysisSummaryEl.innerHTML.trim()) {
             this.elements.analysisSummaryEl.innerHTML = '<p class="text-slate-400 p-4 text-center">Nenhum item relevante foi encontrado.</p>';
-        }
-
-        if (analysis.type === 'products' || analysis.type === 'tdr') {
-            this.elements.analysisSummaryEl.querySelectorAll('.suggest-button').forEach(button => {
-                button.addEventListener('click', AppController.handleAISuggestionRequest);
-            });
         }
     },
 
@@ -310,42 +339,23 @@ erResults(analysis) {
                     ${contentHtml}
                 </details>`;
             }).join('');
-        },       
- products(items, type) {
+        },
+
+        products(items, type) {
             if (!items || items.length === 0) {
                 return (type === 'products' || type === 'tdr') ? '' : '<p class="text-slate-400 p-4 text-center">Nenhum item com especificações foi encontrado.</p>';
             }
 
-            appState.displayedProductItems.push(...items);
-
-            const introText = `<div class="p-4 mb-4 bg-slate-700/50 border border-slate-600 rounded-lg text-sm text-slate-300">
-                <p><strong class="font-semibold text-white">Itens Encontrados:</strong> Para cada item abaixo, clique no botão para acionar uma análise de mercado detalhada com IA e receber sugestões de produtos.</p>
-            </div>`;
-
             const itemsHtml = items.map((item, index) => {
-                const globalIndex = appState.displayedProductItems.length - items.length + index;
                 return `<div class="result-block border border-slate-700 rounded-lg overflow-hidden">
                     <h4 class="font-semibold text-lg p-3 bg-indigo-900/50 text-indigo-200">${this.htmlEncode(item.title)}</h4>
                     <div class="p-4">
                         <div class="space-y-1 text-sm mb-4 whitespace-pre-wrap">${this.htmlEncode(item.description)}</div>
-                        <div class="border-t border-slate-700 pt-4">
-                            <button data-item-index="${globalIndex}" class="suggest-button block w-full text-center bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-colors">
-                                Analisar Mercado e Sugerir Produtos (IA)
-                            </button>
-                        </div>
-                        <div id="suggestion-target-${globalIndex}" class="mt-4"></div>
                     </div>
                 </div>`;
             }).join('');
 
-            let finalHtml = itemsHtml;
-            if (type === 'products') {
-                finalHtml = introText + itemsHtml;
-            } else if (items.length > 0) {
-                finalHtml = '<h4 class="font-semibold text-lg text-white mt-6 mb-2">Itens do Termo de Referência</h4>' + itemsHtml;
-            }
-
-            return finalHtml;
+            return itemsHtml;
         },
 
         otherData(otherData) {
@@ -360,44 +370,14 @@ erResults(analysis) {
             }).join('');
         },
 
-        suggestions(targetDiv, suggestions) {
-            if (!suggestions || suggestions.length === 0) {
-                targetDiv.innerHTML = '<p class="text-slate-400">A IA não retornou sugestões para este item.</p>';
-                return;
-            }
-
-            const suggestionsHtml = suggestions.map(s => {
-                const caracteristicasHtml = s.caracteristicas.map(c => `<li>${this.htmlEncode(c)}</li>`).join('');
-                const positivosHtml = s.pontos_positivos.map(p => `<li><span class="text-emerald-400 mr-2">✔</span>${this.htmlEncode(p)}</li>`).join('');
-                const considerarHtml = s.pontos_a_considerar.map(p => `<li><span class="text-amber-400 mr-2">!</span>${this.htmlEncode(p)}</li>`).join('');
-
-                return `<div class="suggestion-card p-4 rounded-lg mb-4">
-                    <h4 class="font-bold text-lg text-emerald-300">${this.htmlEncode(s.marca)} ${this.htmlEncode(s.modelo)}</h4>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <h5 class="font-semibold text-slate-200 mb-2">Características Principais</h5>
-                            <ul class="list-disc list-inside text-slate-300">${caracteristicasHtml}</ul>
-                        </div>
-                        <div>
-                            <h5 class="font-semibold text-slate-200 mb-2">Pontos Positivos</h5>
-                            <ul class="space-y-1 text-slate-300">${positivosHtml}</ul>
-                            <h5 class="font-semibold text-slate-200 mt-4 mb-2">Pontos a Considerar</h5>
-                            <ul class="space-y-1 text-slate-300">${considerarHtml}</ul>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            targetDiv.innerHTML = `<div class="space-y-4">${suggestionsHtml}</div>`;
-        },
-
         htmlEncode(str) {
             if (typeof str !== 'string') return str;
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
     }
-};const Fi
-leProcessor = {
+};
+
+const FileProcessor = {
     async parse(file) {
         const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
         if (isPdf) {
@@ -533,8 +513,9 @@ const AIService = {
             };
         }
     }
-};co
-nst AnalysisService = {
+};
+
+const AnalysisService = {
     async analyzeText(text, type, structure) {
         const results = { type: type, summary: {}, otherData: {} };
 
@@ -572,8 +553,7 @@ nst AnalysisService = {
 
 const AppController = {
     init() {
-        const { dropZone, fileInput, analyzeButton, resetButton, printButton } = UIManager.elements;
-        const attachFileBtn = document.getElementById('attach-file-btn');
+        const { dropZone, fileInput, analyzeButton, resetButton, printButton, attachFileBtn } = UIManager.elements;
 
         // Drag & Drop functionality
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => 
@@ -598,18 +578,25 @@ const AppController = {
             }
         });
         
-        attachFileBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent dropZone click event
-            fileInput.click();
-        });
+        if (attachFileBtn) {
+            attachFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent dropZone click event
+                fileInput.click();
+            });
+        }
 
         // File input change
         fileInput.addEventListener('change', (e) => this.handleFileSelect(e.target.files));
         
         // Other buttons
         analyzeButton.addEventListener('click', this.handleAnalysisRequest);
-        resetButton.addEventListener('click', this.handleReset);
-        printButton.addEventListener('click', this.handlePrint);
+        if (resetButton) resetButton.addEventListener('click', this.handleReset);
+        if (printButton) printButton.addEventListener('click', this.handlePrint);
+        
+        // Back buttons
+        const { backButton, cancelAnalysisButton } = UIManager.elements;
+        if (backButton) backButton.addEventListener('click', () => UIManager.goBackToUpload());
+        if (cancelAnalysisButton) cancelAnalysisButton.addEventListener('click', () => UIManager.goBackToUpload());
     },
 
     preventDefaults(e) {
@@ -679,304 +666,6 @@ const AppController = {
             console.error("Erro ao processar arquivo:", error);
             UIManager.showError(`Erro ao processar: ${error.message}`);
             UIManager.hideLoading();
-        }
-    },   
- async handleAISuggestionRequest(event) {
-        const button = event.currentTarget;
-        const index = button.dataset.itemIndex;
-        const targetDiv = document.getElementById(`suggestion-target-${index}`);
-        const item = appState.displayedProductItems[index];
-
-        if (!item) {
-            console.error("Could not find item for index:", index);
-            targetDiv.innerHTML = '<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Erro interno: item não encontrado.</div>';
-            return;
-        }
-
-        button.disabled = true;
-        button.textContent = 'Buscando...';
-        targetDiv.innerHTML = '<div class="flex justify-center p-4"><div class="loader"></div></div>';
-
-        try {
-            // Simulação da API de sugestões
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            const mockSuggestions = [
-                {
-                    marca: "Dell",
-                    modelo: "PowerEdge R750",
-                    caracteristicas: ["Intel Xeon Scalable 3ª geração", "Até 2TB RAM DDR4", "Suporte NVMe PCIe 4.0", "Gerenciamento iDRAC9"],
-                    pontos_positivos: ["Alta performance e confiabilidade", "Suporte técnico 24x7", "Garantia de 3 anos", "Baixo consumo energético"],
-                    pontos_a_considerar: ["Preço premium", "Necessita treinamento para gerenciamento"]
-                },
-                {
-                    marca: "HPE",
-                    modelo: "ProLiant DL380 Gen10 Plus",
-                    caracteristicas: ["Processadores Intel Xeon Scalable", "Memória DDR4 3200MHz", "Gerenciamento iLO 5", "Fonte redundante"],
-                    pontos_positivos: ["Boa relação custo-benefício", "Facilidade de gerenciamento", "Ampla compatibilidade"],
-                    pontos_a_considerar: ["Menor capacidade de expansão", "Interface de gerenciamento menos intuitiva"]
-                },
-                {
-                    marca: "Lenovo",
-                    modelo: "ThinkSystem SR650 V2",
-                    caracteristicas: ["Intel Xeon Gold/Platinum", "Até 4TB RAM", "Storage flexível", "XClarity Controller"],
-                    pontos_positivos: ["Preço competitivo", "Design modular", "Eficiência energética"],
-                    pontos_a_considerar: ["Menor presença no mercado brasileiro", "Rede de suporte limitada"]
-                }
-            ];
-
-            UIManager.renderers.suggestions(targetDiv, mockSuggestions);
-            button.style.display = 'none';
-        } catch (error) {
-            targetDiv.innerHTML = `<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Ocorreu um erro ao buscar sugestões. ${error.message}</div>`;
-            button.disabled = false;
-            button.textContent = 'Tentar Novamente';
-        }
-    },
-
-    handleReset() {
-        appState.currentFile = null;
-        appState.currentFileName = '';
-        appState.displayedProductItems = [];
-        appState.analysisResults = null;
-        UIManager.resetUI();
-    },
-
-    handlePrint() {
-        window.print();
-    }
-};
-
-// Initialize the application
-AppController.init();
-</script>
-</body>
-</html> document.g
-etElementById(`suggestion-target-${index}`);
-        const item = appState.displayedProductItems[index];
-
-        if (!item) {
-            console.error("Could not find item for index:", index);
-            targetDiv.innerHTML = '<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Erro interno: item não encontrado.</div>';
-            return;
-        }
-
-        button.disabled = true;
-        button.textContent = 'Buscando...';
-        targetDiv.innerHTML = '<div class="flex justify-center p-4"><div class="loader"></div></div>';
-
-        try {
-            // Simulação da API de sugestões
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            const mockSuggestions = [
-                {
-                    marca: "Dell",
-                    modelo: "PowerEdge R750",
-                    caracteristicas: ["Intel Xeon Scalable 3ª geração", "Até 2TB RAM DDR4", "Suporte NVMe PCIe 4.0", "Gerenciamento iDRAC9"],
-                    pontos_positivos: ["Alta performance e confiabilidade", "Suporte técnico 24x7", "Garantia de 3 anos", "Baixo consumo energético"],
-                    pontos_a_considerar: ["Preço premium", "Necessita treinamento para gerenciamento"]
-                },
-                {
-                    marca: "HPE",
-                    modelo: "ProLiant DL380 Gen10 Plus",
-                    caracteristicas: ["Processadores Intel Xeon Scalable", "Memória DDR4 3200MHz", "Gerenciamento iLO 5", "Fonte redundante"],
-                    pontos_positivos: ["Boa relação custo-benefício", "Facilidade de gerenciamento", "Ampla compatibilidade"],
-                    pontos_a_considerar: ["Menor capacidade de expansão", "Interface de gerenciamento menos intuitiva"]
-                },
-                {
-                    marca: "Lenovo",
-                    modelo: "ThinkSystem SR650 V2",
-                    caracteristicas: ["Intel Xeon Gold/Platinum", "Até 4TB RAM", "Storage flexível", "XClarity Controller"],
-                    pontos_positivos: ["Preço competitivo", "Design modular", "Eficiência energética"],
-                    pontos_a_considerar: ["Menor presença no mercado brasileiro", "Rede de suporte limitada"]
-                }
-            ];
-
-            UIManager.renderers.suggestions(targetDiv, mockSuggestions);
-            button.style.display = 'none';
-        } catch (error) {
-            targetDiv.innerHTML = `<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Ocorreu um erro: ${error.message}</div>`;
-            button.disabled = false;
-            button.textContent = 'Tentar Novamente';
-        }
-    },
-
-    handleReset() {
-        appState.currentFile = null;
-        appState.currentFileName = '';
-        appState.displayedProductItems = [];
-        appState.analysisResults = null;
-        UIManager.resetUI();
-    },
-
-    handlePrint() {
-        const printContent = document.getElementById('analysis-content').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Análise de Edital - ${appState.currentFileName}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .result-block { margin-bottom: 20px; border: 1px solid #ccc; padding: 15px; }
-                        .keyword-tag { background-color: #e0e7ff; padding: 2px 8px; margin: 2px; border-radius: 4px; }
-                        .suggestion-card { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Análise de Edital - ${appState.currentFileName}</h1>
-                    ${printContent}
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    }
-};
-
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM carregado, inicializando aplicação...');
-    AppController.init();
-});
-</script>
-</body>
-</html>sten
-er('click', (e) => {
-            e.stopPropagation(); // Prevent dropZone click event
-            fileInput.click();
-        });
-
-        // File input change
-        fileInput.addEventListener('change', (e) => this.handleFileSelect(e.target.files));
-        
-        // Other buttons
-        analyzeButton.addEventListener('click', this.handleAnalysisRequest);
-        resetButton.addEventListener('click', this.handleReset);
-        printButton.addEventListener('click', this.handlePrint);
-    },
-
-    preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    },
-
-    handleFileSelect(files) {
-        if (!files || files.length === 0) {
-            console.log('Nenhum arquivo selecionado');
-            return;
-        }
-
-        const file = files[0];
-        console.log('Arquivo selecionado:', {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            lastModified: new Date(file.lastModified)
-        });
-
-        const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
-        const isDocx = file.type.includes('docx') || file.name.toLowerCase().endsWith('.docx');
-        
-        console.log('Validação de tipo:', { isPdf, isDocx });
-        
-        if (!file || (!isPdf && !isDocx)) {
-            const errorMsg = `Tipo de arquivo não suportado. Arquivo: ${file.name}, Tipo: ${file.type}. Use .pdf ou .docx.`;
-            console.error(errorMsg);
-            UIManager.showError(errorMsg);
-            return;
-        }
-
-        UIManager.hideError();
-        appState.currentFile = file;
-        appState.currentFileName = file.name;
-        
-        // Add success animation
-        UIManager.elements.dropZone.style.transform = 'scale(0.98)';
-        setTimeout(() => {
-            UIManager.elements.dropZone.style.transform = 'scale(1)';
-            UIManager.updateDropZoneWithFile(file);
-        }, 150);
-        
-        console.log('Arquivo aceito e armazenado');
-    },
-
-    async handleAnalysisRequest() {
-        if (!appState.currentFile) return;
-
-        const analysisType = document.querySelector('input[name="analysis_type"]:checked').value;
-        UIManager.showLoading(analysisType === 'docs' ? 'Analisando documentação com IA...' : 'Estruturando o documento com IA...');
-
-        try {
-            const text = await FileProcessor.parse(appState.currentFile);
-            if (!text.trim()) throw new Error("Não foi possível extrair texto do arquivo.");
-
-            const documentStructure = await AIService.query('', text, {});
-            
-            UIManager.showLoading(`Executando Análise de ${analysisType}...`);
-            appState.analysisResults = await AnalysisService.analyzeText(text, analysisType, documentStructure);
-
-            UIManager.renderResults(appState.analysisResults);
-            UIManager.hideLoading();
-            UIManager.showResults();
-        } catch (error) {
-            console.error("Erro ao processar arquivo:", error);
-            UIManager.showError(`Erro ao processar: ${error.message}`);
-            UIManager.hideLoading();
-        }
-    },
-
-    async handleAISuggestionRequest(event) {
-        const button = event.currentTarget;
-        const index = button.dataset.itemIndex;
-        const targetDiv = document.getElementById(`suggestion-target-${index}`);
-        const item = appState.displayedProductItems[index];
-
-        if (!item) {
-            console.error("Could not find item for index:", index);
-            targetDiv.innerHTML = '<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Erro interno: item não encontrado.</div>';
-            return;
-        }
-
-        button.disabled = true;
-        button.textContent = 'Buscando...';
-        targetDiv.innerHTML = '<div class="flex justify-center p-4"><div class="loader"></div></div>';
-
-        try {
-            // Simulação da API de sugestões
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            const mockSuggestions = [
-                {
-                    marca: "Dell",
-                    modelo: "PowerEdge R750",
-                    caracteristicas: ["Intel Xeon Scalable 3ª geração", "Até 2TB RAM DDR4", "Suporte NVMe PCIe 4.0", "Gerenciamento iDRAC9"],
-                    pontos_positivos: ["Alta performance e confiabilidade", "Suporte técnico 24x7", "Garantia de 3 anos", "Baixo consumo energético"],
-                    pontos_a_considerar: ["Preço premium", "Necessita treinamento para gerenciamento"]
-                },
-                {
-                    marca: "HPE",
-                    modelo: "ProLiant DL380 Gen10 Plus",
-                    caracteristicas: ["Processadores Intel Xeon Scalable", "Memória DDR4 3200MHz", "Gerenciamento iLO 5", "Fonte redundante"],
-                    pontos_positivos: ["Boa relação custo-benefício", "Facilidade de gerenciamento", "Ampla compatibilidade"],
-                    pontos_a_considerar: ["Menor capacidade de expansão", "Interface de gerenciamento menos intuitiva"]
-                },
-                {
-                    marca: "Lenovo",
-                    modelo: "ThinkSystem SR650 V2",
-                    caracteristicas: ["Intel Xeon Gold/Platinum", "Até 4TB RAM", "Storage flexível", "XClarity Controller"],
-                    pontos_positivos: ["Preço competitivo", "Design modular", "Eficiência energética"],
-                    pontos_a_considerar: ["Menor presença no mercado brasileiro", "Rede de suporte limitada"]
-                }
-            ];
-
-            UIManager.renderers.suggestions(targetDiv, mockSuggestions);
-            button.style.display = 'none';
-        } catch (error) {
-            targetDiv.innerHTML = `<div class="text-red-400 p-2 border border-red-800 bg-red-900/30 rounded">Ocorreu um erro: ${error.message}</div>`;
-            button.disabled = false;
-            button.textContent = 'Tentar Novamente';
         }
     },
 
