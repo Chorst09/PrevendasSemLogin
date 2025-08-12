@@ -758,10 +758,160 @@ const EditalAnalyzer: React.FC = () => {
     return alternatives;
   };
 
+  // Extrair informações gerais do edital
+  const extractGeneralInfo = (text: string) => {
+    console.log('🔍 Extraindo informações gerais do edital...');
+    
+    // Extrair número do edital
+    const editalNumberPatterns = [
+      /(?:edital|pregão|concorrência|tomada de preços?)\s*n[°º]?\s*(\d+(?:\/\d{4})?)/gi,
+      /(?:processo|licitação)\s*n[°º]?\s*(\d+(?:\/\d{4})?)/gi,
+      /n[°º]?\s*(\d+\/\d{4})/gi
+    ];
+    
+    let editalNumber = '';
+    for (const pattern of editalNumberPatterns) {
+      const match = pattern.exec(text);
+      if (match) {
+        editalNumber = match[1];
+        break;
+      }
+    }
+
+    // Extrair data e horário de início
+    const dateTimePatterns = [
+      /(?:data|início|abertura).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(?:às|horário|hora).*?(\d{1,2}:\d{2})/gi,
+      /(\d{1,2}\/\d{1,2}\/\d{4}).*?(?:às|horário|hora).*?(\d{1,2}:\d{2})/gi,
+      /(?:sessão|abertura).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi
+    ];
+    
+    let startDate = '';
+    let startTime = '';
+    for (const pattern of dateTimePatterns) {
+      const match = pattern.exec(text);
+      if (match) {
+        startDate = match[1];
+        startTime = match[2];
+        break;
+      }
+    }
+
+    // Extrair portal/plataforma
+    const portalPatterns = [
+      /(?:portal|plataforma|sistema).*?(comprasnet|licitações-e|bec|bancoob|bb|caixa|portal nacional)/gi,
+      /(?:www\.|https?:\/\/)([a-zA-Z0-9.-]+\.(?:gov\.br|com\.br|org\.br))/gi,
+      /(?:comprasnet|licitações-e|bec|bancoob|bb|caixa)/gi
+    ];
+    
+    let portal = '';
+    for (const pattern of portalPatterns) {
+      const match = pattern.exec(text);
+      if (match) {
+        portal = match[1] || match[0];
+        break;
+      }
+    }
+
+    // Extrair prazo para cadastro de proposta
+    const proposalDeadlinePatterns = [
+      /(?:prazo|até|limite).*?(?:proposta|lance|oferta).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi,
+      /(?:proposta|lance|oferta).*?(?:até|limite).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi,
+      /(?:encerramento|fim).*?(?:proposta|lance).*?(\d{1,2}\/\d{1,2}\/\d{4}).*?(\d{1,2}:\d{2})/gi
+    ];
+    
+    let proposalDeadlineDate = '';
+    let proposalDeadlineTime = '';
+    for (const pattern of proposalDeadlinePatterns) {
+      const match = pattern.exec(text);
+      if (match) {
+        proposalDeadlineDate = match[1];
+        proposalDeadlineTime = match[2];
+        break;
+      }
+    }
+
+    // Extrair valor máximo do edital
+    const maxValuePatterns = [
+      /(?:valor\s+(?:máximo|estimado|total|global)).*?R\$\s*([\d.,]+)/gi,
+      /(?:orçamento\s+(?:estimado|total)).*?R\$\s*([\d.,]+)/gi,
+      /(?:limite\s+(?:orçamentário|de\s+gastos?)).*?R\$\s*([\d.,]+)/gi,
+      /R\$\s*([\d.,]+).*?(?:valor\s+(?:máximo|total|estimado))/gi
+    ];
+    
+    let maxValue = '';
+    for (const pattern of maxValuePatterns) {
+      const match = pattern.exec(text);
+      if (match) {
+        maxValue = `R$ ${match[1]}`;
+        break;
+      }
+    }
+
+    // Gerar resumo dos itens
+    const itemSummary = generateItemSummary(text);
+
+    return {
+      editalNumber: editalNumber || 'Não identificado',
+      startDate: startDate || 'Não identificado',
+      startTime: startTime || 'Não identificado',
+      portal: portal || 'Não identificado',
+      proposalDeadlineDate: proposalDeadlineDate || 'Não identificado',
+      proposalDeadlineTime: proposalDeadlineTime || 'Não identificado',
+      maxValue: maxValue || 'Não identificado',
+      itemSummary: itemSummary
+    };
+  };
+
+  // Gerar resumo dos itens
+  const generateItemSummary = (text: string): string => {
+    const itemPatterns = [
+      /(?:ITEM|LOTE)\s+\d+.*?([A-ZÁÊÇÕ][A-Za-záêçõ\s]{10,80})/gi,
+      /(\d+\.\d+)\s+([A-ZÁÊÇÕ][A-Za-záêçõ\s]{10,80})/gi
+    ];
+    
+    const items: string[] = [];
+    const categories = new Set<string>();
+    
+    itemPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(text)) !== null && items.length < 10) {
+        const itemName = (match[2] || match[1]).trim();
+        if (itemName.length > 10) {
+          items.push(itemName);
+          
+          // Categorizar item
+          const itemLower = itemName.toLowerCase();
+          if (itemLower.includes('servidor') || itemLower.includes('server')) categories.add('Servidores');
+          else if (itemLower.includes('switch') || itemLower.includes('rede')) categories.add('Equipamentos de Rede');
+          else if (itemLower.includes('storage') || itemLower.includes('armazenamento')) categories.add('Armazenamento');
+          else if (itemLower.includes('notebook') || itemLower.includes('computador')) categories.add('Equipamentos de Usuário');
+          else if (itemLower.includes('software') || itemLower.includes('licença')) categories.add('Software');
+          else categories.add('Outros Equipamentos');
+        }
+      }
+    });
+
+    if (items.length === 0) {
+      return 'Itens não identificados automaticamente. Verificar documento manualmente.';
+    }
+
+    const categoryList = Array.from(categories).join(', ');
+    const itemCount = items.length;
+    const firstItems = items.slice(0, 5).join('; ');
+    
+    return `Identificados ${itemCount} itens principais incluindo: ${firstItems}${itemCount > 5 ? '...' : ''}. Categorias: ${categoryList}.`;
+  };
+
   // Análise inteligente do texto extraído
   const analyzeExtractedText = (text: string, analysisType: string): AnalysisResult => {
     console.log(`🔬 Iniciando análise: ${text.length} caracteres, tipo: ${analysisType}`);
     const startTime = Date.now();
+
+    // Extrair informações gerais se for análise geral
+    let generalInfo = null;
+    if (analysisType === 'geral') {
+      generalInfo = extractGeneralInfo(text);
+    }
 
     // Usar as novas funções de extração baseadas no tipo de análise
     let products: ProductItem[] = [];
@@ -826,6 +976,30 @@ const EditalAnalyzer: React.FC = () => {
 
     console.log(`✅ Análise concluída: ${products.length} produtos, ${values.length} valores, ${deadlines.length} prazos`);
 
+    // Construir keyPoints baseado no tipo de análise
+    let keyPoints: string[] = [];
+    let summary = '';
+
+    if (analysisType === 'geral' && generalInfo) {
+      summary = `Análise geral do edital "${selectedFile!.name}" concluída com extração de informações chave.`;
+      keyPoints = [
+        `📋 Número do Edital: ${generalInfo.editalNumber}`,
+        `📅 Data/Hora de Início: ${generalInfo.startDate} às ${generalInfo.startTime}`,
+        `🌐 Portal: ${generalInfo.portal}`,
+        `⏰ Prazo para Proposta: ${generalInfo.proposalDeadlineDate} às ${generalInfo.proposalDeadlineTime}`,
+        `💰 Valor Máximo: ${generalInfo.maxValue}`,
+        `📦 Resumo dos Itens: ${generalInfo.itemSummary}`
+      ];
+    } else {
+      summary = `Análise realizada do arquivo "${selectedFile!.name}". Identificados ${products.length} itens técnicos com especificações extraídas do documento real.`;
+      keyPoints = [
+        `${products.length} produtos identificados automaticamente`,
+        `Análise baseada em ${text.length} caracteres de texto real`,
+        `Confiança da extração: ${confidence}%`,
+        `Tempo de processamento: ${processingTime}s`
+      ];
+    }
+
     return {
       id: `analysis-${Date.now()}`,
       fileName: selectedFile!.name,
@@ -833,13 +1007,8 @@ const EditalAnalyzer: React.FC = () => {
       analysisDate: new Date().toISOString(),
       confidence: Math.min(confidence, 99),
       processingTime: Math.round(processingTime * 10) / 10,
-      summary: `Análise realizada do arquivo "${selectedFile!.name}". Identificados ${products.length} itens técnicos com especificações extraídas do documento real.`,
-      keyPoints: [
-        `${products.length} produtos identificados automaticamente`,
-        `Análise baseada em ${text.length} caracteres de texto real`,
-        `Confiança da extração: ${confidence}%`,
-        `Tempo de processamento: ${processingTime}s`
-      ],
+      summary: summary,
+      keyPoints: keyPoints,
       requirements: [
         "Equipamentos conforme especificações extraídas do edital",
         "Certificações técnicas obrigatórias",
