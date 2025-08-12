@@ -529,16 +529,18 @@ const PABXSIPCalculator: React.FC = () => {
 
     const handleAddSipProduct = () => {
         if (sipResult && selectedSipPlan) {
-            const plan = sipPlans[selectedSipPlan];
-            const description = `${plan.name}${sipWithEquipment && plan.channels > 0 ? ' com equipamento' : ''}${sipAdditionalChannels > 0 ? ` + ${sipAdditionalChannels} canais adicionais` : ''}`;
-            setAddedProducts(prev => [...prev, {
-                id: generateUniqueId(),
-                type: 'SIP',
-                description,
-                setup: sipResult.setup,
-                monthly: sipResult.monthly,
-                details: { plan: selectedSipPlan, additionalChannels: sipAdditionalChannels, withEquipment: sipWithEquipment }
-            }]);
+            const plan = sipPlans.find(p => p.name === selectedSipPlan);
+            if (plan) {
+                const description = `${plan.name}${sipWithEquipment && plan.channels > 0 ? ' com equipamento' : ''}${sipAdditionalChannels > 0 ? ` + ${sipAdditionalChannels} canais adicionais` : ''}`;
+                setAddedProducts(prev => [...prev, {
+                    id: generateUniqueId(),
+                    type: 'SIP',
+                    description,
+                    setup: sipResult.setup,
+                    monthly: sipResult.monthly,
+                    details: { plan: selectedSipPlan, additionalChannels: sipAdditionalChannels, withEquipment: sipWithEquipment }
+                }]);
+            }
         }
     };
 
