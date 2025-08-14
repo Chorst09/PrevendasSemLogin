@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ArrowLeft, User, Building, UserCheck, ShoppingCart, Calendar, Wrench } from "lucide-react"
+import { useProposalStore } from "@/lib/stores/proposal-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ type ProposalStep = "form" | "modules"
 
 export function ProposalCreation({ onBack, onSelectModule }: ProposalCreationProps) {
   const [currentStep, setCurrentStep] = useState<ProposalStep>("form")
+  const { createProposal, setCurrentProposal } = useProposalStore()
   const [formData, setFormData] = useState({
     // Dados do Cliente
     clientName: "CARLOS HORST",
@@ -46,6 +48,28 @@ export function ProposalCreation({ onBack, onSelectModule }: ProposalCreationPro
   }
 
   const handleCreateProposal = () => {
+    // Salvar a proposta no store
+    const proposalId = createProposal({
+      clientName: formData.clientName,
+      clientEmail: formData.clientEmail,
+      clientPhone: formData.clientPhone,
+      clientCompany: formData.clientCompany,
+      clientCNPJ: formData.clientCNPJ,
+      clientAddress: formData.clientAddress,
+      projectName: formData.projectName,
+      projectType: formData.projectType,
+      projectDescription: formData.projectDescription,
+      deliveryDate: formData.deliveryDate,
+      estimatedBudget: formData.estimatedBudget,
+      managerName: formData.managerName,
+      managerEmail: formData.managerEmail,
+      managerPhone: formData.managerPhone,
+      managerDepartment: formData.managerDepartment
+    })
+    
+    // Definir como proposta atual
+    setCurrentProposal(proposalId)
+    
     setCurrentStep("modules")
   }
 

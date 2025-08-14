@@ -12,12 +12,14 @@ import { Badge } from "@/components/ui/badge"
 import type { ProductItem, ICMSInterstateRates } from "@/lib/types/pricing"
 import { defaultICMSRates, stateNames } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
+import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface SalesModuleProps {
   onBack: () => void
 }
 
 export function SalesModule({ onBack }: SalesModuleProps) {
+  const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [products, setProducts] = useState<ProductItem[]>([
     {
       id: "1",
@@ -104,7 +106,28 @@ export function SalesModule({ onBack }: SalesModuleProps) {
   }
 
   const handleAddToBudget = () => {
-    alert("Produto adicionado ao orçamento com sucesso!")
+    if (!currentProposal) {
+      alert("Nenhuma proposta ativa encontrada!")
+      return
+    }
+
+    const budgetItems = products.map(product => ({
+      id: `ITEM-${Date.now()}-${Math.random()}`,
+      description: product.description,
+      quantity: product.quantity,
+      unitPrice: product.unitCost,
+      totalPrice: product.grossRevenue,
+      module: 'sales' as const,
+      moduleData: product
+    }))
+
+    addBudgetToProposal(currentProposal.id, {
+      module: 'sales',
+      items: budgetItems,
+      totalValue: totals.grossRevenue
+    })
+
+    alert(`Orçamento de vendas adicionado à proposta "${currentProposal.projectName}" com sucesso!`)
   }
 
   return (

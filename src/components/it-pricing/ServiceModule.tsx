@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { ServiceItem } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
+import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface ServiceModuleProps {
   onBack: () => void
 }
 
 export function ServiceModule({ onBack }: ServiceModuleProps) {
+  const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [desiredMargin, setDesiredMargin] = useState(20)
   const [analysisTab, setAnalysisTab] = useState<"resumo" | "analise">("resumo")
 
@@ -90,7 +92,28 @@ export function ServiceModule({ onBack }: ServiceModuleProps) {
   }
 
   const handleAddToBudget = () => {
-    alert("Serviço adicionado ao orçamento com sucesso!")
+    if (!currentProposal) {
+      alert("Nenhuma proposta ativa encontrada!")
+      return
+    }
+
+    const budgetItems = serviceItems.map(item => ({
+      id: `ITEM-${Date.now()}-${Math.random()}`,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.hourlyRate,
+      totalPrice: item.totalValue + item.marginCommission,
+      module: 'services' as const,
+      moduleData: item
+    }))
+
+    addBudgetToProposal(currentProposal.id, {
+      module: 'services',
+      items: budgetItems,
+      totalValue: finalSuggestedPrice
+    })
+
+    alert(`Orçamento de serviços adicionado à proposta "${currentProposal.projectName}" com sucesso!`)
   }
 
   return (

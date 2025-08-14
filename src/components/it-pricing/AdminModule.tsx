@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ArrowLeft, BarChart3, Users, Package, TrendingUp, DollarSign, FileText, Settings, Eye, Package2, UserCheck, Calendar } from "lucide-react"
 import { ConfigurationModule } from "./ConfigurationModule"
+import { ProposalsManagement } from "./ProposalsManagement"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -208,20 +209,7 @@ export function AdminModule({ onBack }: AdminModuleProps) {
 
           {/* Outras tabs com conteúdo placeholder */}
           <TabsContent value="propostas" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestão de Propostas</CardTitle>
-                <p className="text-sm text-muted-foreground">Visualize e gerencie todas as propostas do sistema</p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Módulo de Propostas</h3>
-                  <p className="text-muted-foreground mb-4">Funcionalidade em desenvolvimento</p>
-                  <Button variant="outline">Ver Propostas Existentes</Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ProposalsManagement />
           </TabsContent>
 
           <TabsContent value="produtos" className="space-y-6">

@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import type { RentalItem } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
+import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface RentalModuleProps {
   onBack: () => void
 }
 
 export function RentalModule({ onBack }: RentalModuleProps) {
+  const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [contractPeriod, setContractPeriod] = useState(12)
   const [desiredMargin, setDesiredMargin] = useState(20)
   const [analysisTab, setAnalysisTab] = useState<"resumo" | "analise">("resumo")
@@ -96,7 +98,28 @@ export function RentalModule({ onBack }: RentalModuleProps) {
   }
 
   const handleAddToBudget = () => {
-    alert("Item adicionado ao orçamento com sucesso!")
+    if (!currentProposal) {
+      alert("Nenhuma proposta ativa encontrada!")
+      return
+    }
+
+    const budgetItems = rentalItems.map(item => ({
+      id: `ITEM-${Date.now()}-${Math.random()}`,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitValue,
+      totalPrice: item.monthlyActiveCost,
+      module: 'rental' as const,
+      moduleData: item
+    }))
+
+    addBudgetToProposal(currentProposal.id, {
+      module: 'rental',
+      items: budgetItems,
+      totalValue: finalSuggestedPrice
+    })
+
+    alert(`Orçamento de locação adicionado à proposta "${currentProposal.projectName}" com sucesso!`)
   }
 
   return (
