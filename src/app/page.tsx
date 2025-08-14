@@ -37,6 +37,7 @@ import VMCalculator from '@/components/calculators/VMCalculator';
 import PABXSIPCalculator from '@/components/calculators/PABXSIPCalculator';
 import FiberLinkCalculator from '@/components/calculators/FiberLinkCalculator';
 import RadioInternetCalculator from '@/components/calculators/RadioInternetCalculator';
+import { ITPricingModule } from '@/components/it-pricing/ITPricingModule';
 
 // Importe dados e tipos se ainda usados aqui
 import type { Partner, Quote, RO, Training, BidDocs, NavItem, NavSubItem, Proposal, RFP, PriceRecord, Edital } from '@/lib/types';
@@ -156,7 +157,7 @@ export default function App() { // Ou Home
             case 'training-management': return <TrainingManagementView partners={partners} trainings={trainings} onSave={() => { }} onDelete={() => { }} />; // Adapte as props
             case 'quotes': return <QuotesView quotes={quotes} partners={partners} onSave={() => { }} onDelete={() => { }} />; // QuotesView pode precisar adaptação
             case 'proposals': return <ProposalsView proposals={proposals} partners={partners} onSave={(proposal) => setProposals(prev => [...prev.filter(p => p.id !== proposal.id), proposal])} onDelete={(id) => setProposals(prev => prev.filter(p => p.id !== id))} />;
-            case 'calculator-ti-vls': return <CalculatorFrame src="https://precificacaoti.netlify.app/" title="Precificação Venda/Locação/Serviços" />;
+            case 'calculator-ti-vls': return <ITPricingModule />;
             case 'calculator-vm': return <VMCalculator />;
             case 'calculator-pabx-sip': return <PABXSIPCalculator />;
             case 'calculator-fiber-link': return <FiberLinkCalculator />;
