@@ -66,6 +66,32 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Adicionando classes utilitárias para efeitos modernos */
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 dark:bg-slate-900/80;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent;
+  }
+
+  .gradient-card {
+    @apply bg-gradient-to-br from-card via-card to-muted/50;
+  }
+
+  .tech-glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-xl;
+  }
+
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle, hsl(var(--primary) / 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
 }
 
 /* Custom scrollbar for webkit browsers */
