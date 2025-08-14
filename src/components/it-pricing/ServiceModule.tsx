@@ -7,15 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { ModuleShortcuts } from "./ModuleShortcuts"
 import type { ServiceItem } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
 import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface ServiceModuleProps {
   onBack: () => void
+  onModuleChange?: (module: 'sales' | 'rental' | 'services') => void
 }
 
-export function ServiceModule({ onBack }: ServiceModuleProps) {
+export function ServiceModule({ onBack, onModuleChange }: ServiceModuleProps) {
   const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [desiredMargin, setDesiredMargin] = useState(20)
   const [analysisTab, setAnalysisTab] = useState<"resumo" | "analise">("resumo")
@@ -146,6 +148,14 @@ export function ServiceModule({ onBack }: ServiceModuleProps) {
       </div>
 
       <div className="px-6">
+        {/* Module Shortcuts */}
+        {onModuleChange && (
+          <ModuleShortcuts 
+            currentModule="services" 
+            onModuleChange={onModuleChange}
+          />
+        )}
+
         {/* Module Tab */}
         <div className="flex justify-center mb-8">
           <div className="flex bg-muted rounded-lg p-1">

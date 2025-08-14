@@ -1,20 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Eye, Edit, Trash2, Plus, User, Building, Calendar, DollarSign, ShoppingCart, Wrench } from "lucide-react"
+import { FileText, Eye, Edit, Trash2, Plus, User, Building, Calendar, DollarSign, ShoppingCart, Wrench, Download, Printer, FileCheck, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProposalStore } from "@/lib/stores/proposal-store"
+import { EditProposalModal } from "./EditProposalModal"
+import { ProposalPreview } from "./ProposalPreview"
 import type { ProposalData } from "@/lib/types/proposals"
 
-export function ProposalsManagement() {
-  const { proposals, updateProposalStatus } = useProposalStore()
+interface ProposalsManagementProps {
+  onBack?: () => void
+}
+
+export function ProposalsManagement({ onBack }: ProposalsManagementProps = {}) {
+  const { proposals, updateProposalStatus, generateProposalPDF } = useProposalStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedProposal, setSelectedProposal] = useState<ProposalData | null>(null)
+  const [editingProposal, setEditingProposal] = useState<ProposalData | null>(null)
+  const [previewProposal, setPreviewProposal] = useState<ProposalData | null>(null)
 
   const filteredProposals = proposals.filter(proposal => {
     const matchesSearch = proposal.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,6 +75,34 @@ export function ProposalsManagement() {
             Voltar à Lista
           </Button>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingProposal(selectedProposal)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar Proposta
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPreviewProposal(selectedProposal)}
+            >
+              <FileCheck className="h-4 w-4 mr-2" />
+              Prévia PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => generateProposalPDF(selectedProposal.id, 'save')}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Baixar PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => generateProposalPDF(selectedProposal.id, 'print')}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir PDF
+            </Button>
             <Select 
               value={selectedProposal.status} 
               onValueChange={(value) => updateProposalStatus(selectedProposal.id, value as ProposalData['status'])}
@@ -257,13 +293,28 @@ export function ProposalsManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Gestão de Propostas</h2>
-          <p className="text-muted-foreground">Visualize e gerencie todas as propostas do sistema</p>
+    <div className="min-h-screen bg-background">
+      {/* Header com botão voltar */}
+      {onBack && (
+        <div className="p-6 border-b">
+          <Button
+            onClick={onBack}
+            variant="outline"
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
         </div>
-      </div>
+      )}
+
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Gestão de Propostas</h2>
+            <p className="text-muted-foreground">Visualize e gerencie todas as propostas do sistema</p>
+          </div>
+        </div>
 
       {/* Filtros */}
       <div className="flex gap-4">
@@ -358,12 +409,63 @@ export function ProposalsManagement() {
                       <Eye className="h-4 w-4" />
                       Ver Detalhes
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingProposal(proposal)}
+                    >
+                      <Edit className="h-4 w-4" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPreviewProposal(proposal)}
+                      title="Prévia PDF"
+                    >
+                      <FileCheck className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateProposalPDF(proposal.id, 'save')}
+                      title="Baixar PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateProposalPDF(proposal.id, 'print')}
+                      title="Imprimir PDF"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))
         )}
+      </div>
+
+      {/* Modal de Edição */}
+      {editingProposal && (
+        <EditProposalModal
+          proposal={editingProposal}
+          isOpen={!!editingProposal}
+          onClose={() => setEditingProposal(null)}
+        />
+      )}
+
+      {/* Modal de Prévia */}
+      {previewProposal && (
+        <ProposalPreview
+          proposal={previewProposal}
+          isOpen={!!previewProposal}
+          onClose={() => setPreviewProposal(null)}
+        />
+      )}
       </div>
     </div>
   )

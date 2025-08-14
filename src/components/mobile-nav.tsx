@@ -52,6 +52,13 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
           <Button
             variant="ghost"
             className="justify-start text-lg font-medium hover:text-primary transition-colors"
+            onClick={() => handleNavigation("proposals")}
+          >
+            Propostas
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start text-lg font-medium hover:text-primary transition-colors"
             onClick={() => handleNavigation("admin")}
           >
             Admin

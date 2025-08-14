@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ProposalData, Budget, BudgetItem } from '@/lib/types/proposals'
+import { generateProposalPDF } from '@/lib/utils/pdf-generator'
 
 interface ProposalStore {
   proposals: ProposalData[]
@@ -10,9 +11,11 @@ interface ProposalStore {
   
   // Actions
   createProposal: (proposalData: Omit<ProposalData, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'budgets'>) => string
+  updateProposal: (proposalId: string, proposalData: Partial<Omit<ProposalData, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'budgets'>>) => void
   setCurrentProposal: (proposalId: string) => void
   addBudgetToProposal: (proposalId: string, budget: Omit<Budget, 'id' | 'proposalId' | 'createdAt' | 'updatedAt'>) => void
   updateProposalStatus: (proposalId: string, status: ProposalData['status']) => void
+  generateProposalPDF: (proposalId: string, action?: 'save' | 'print') => void
   getProposalById: (proposalId: string) => ProposalData | undefined
   getAllProposals: () => ProposalData[]
 }
@@ -40,6 +43,23 @@ export const useProposalStore = create<ProposalStore>()(
         }))
         
         return id
+      },
+
+      updateProposal: (proposalId, proposalData) => {
+        set((state) => ({
+          proposals: state.proposals.map(proposal =>
+            proposal.id === proposalId
+              ? { 
+                  ...proposal, 
+                  ...proposalData,
+                  updatedAt: new Date()
+                }
+              : proposal
+          ),
+          currentProposal: state.currentProposal?.id === proposalId 
+            ? { ...state.currentProposal, ...proposalData, updatedAt: new Date() }
+            : state.currentProposal
+        }))
       },
 
       setCurrentProposal: (proposalId) => {
@@ -79,6 +99,13 @@ export const useProposalStore = create<ProposalStore>()(
               : proposal
           )
         }))
+      },
+
+      generateProposalPDF: (proposalId, action = 'save') => {
+        const proposal = get().proposals.find(p => p.id === proposalId)
+        if (proposal) {
+          generateProposalPDF(proposal, action)
+        }
       },
 
       getProposalById: (proposalId) => {

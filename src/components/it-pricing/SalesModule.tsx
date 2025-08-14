@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { ModuleShortcuts } from "./ModuleShortcuts"
 import type { ProductItem, ICMSInterstateRates } from "@/lib/types/pricing"
 import { defaultICMSRates, stateNames } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
@@ -16,9 +17,10 @@ import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface SalesModuleProps {
   onBack: () => void
+  onModuleChange?: (module: 'sales' | 'rental' | 'services') => void
 }
 
-export function SalesModule({ onBack }: SalesModuleProps) {
+export function SalesModule({ onBack, onModuleChange }: SalesModuleProps) {
   const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [products, setProducts] = useState<ProductItem[]>([
     {
@@ -160,6 +162,14 @@ export function SalesModule({ onBack }: SalesModuleProps) {
       </div>
 
       <div className="px-6">
+        {/* Module Shortcuts */}
+        {onModuleChange && (
+          <ModuleShortcuts 
+            currentModule="sales" 
+            onModuleChange={onModuleChange}
+          />
+        )}
+
         {/* Module Tab */}
         <div className="flex justify-center mb-8">
           <div className="flex bg-muted rounded-lg p-1">

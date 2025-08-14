@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Calendar, Wrench, BarChart3, Users, Settings, Zap, Shield, TrendingUp } from "lucide-react"
+import { ShoppingCart, Calendar, Wrench, BarChart3, Users, Settings, Zap, Shield, TrendingUp, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,8 +12,9 @@ import { RentalModule } from "./RentalModule"
 import { ServiceModule } from "./ServiceModule"
 import { AdminModule } from "./AdminModule"
 import { ProposalCreation } from "./ProposalCreation"
+import { ProposalsManagement } from "./ProposalsManagement"
 
-type ModuleType = "home" | "sales" | "rental" | "services" | "admin" | "proposal"
+type ModuleType = "home" | "sales" | "rental" | "services" | "admin" | "proposal" | "proposals"
 
 export function ITPricingModule() {
     const [currentModule, setCurrentModule] = useState<ModuleType>("home")
@@ -26,16 +27,20 @@ export function ITPricingModule() {
         setCurrentModule(module as ModuleType)
     }
 
+    const handleModuleChange = (module: 'sales' | 'rental' | 'services') => {
+        setCurrentModule(module)
+    }
+
     if (currentModule === "sales") {
-        return <SalesModule onBack={handleBack} />
+        return <SalesModule onBack={handleBack} onModuleChange={handleModuleChange} />
     }
 
     if (currentModule === "rental") {
-        return <RentalModule onBack={handleBack} />
+        return <RentalModule onBack={handleBack} onModuleChange={handleModuleChange} />
     }
 
     if (currentModule === "services") {
-        return <ServiceModule onBack={handleBack} />
+        return <ServiceModule onBack={handleBack} onModuleChange={handleModuleChange} />
     }
 
     if (currentModule === "admin") {
@@ -44,6 +49,10 @@ export function ITPricingModule() {
 
     if (currentModule === "proposal") {
         return <ProposalCreation onBack={handleBack} onSelectModule={(module) => setCurrentModule(module as ModuleType)} />
+    }
+
+    if (currentModule === "proposals") {
+        return <ProposalsManagement onBack={handleBack} />
     }
 
     return (
@@ -82,6 +91,13 @@ export function ITPricingModule() {
                                     onClick={() => setCurrentModule("services")}
                                 >
                                     Serviços
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm font-medium hover:text-primary transition-colors font-[var(--font-body)]"
+                                    onClick={() => setCurrentModule("proposals")}
+                                >
+                                    Propostas
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -240,6 +256,56 @@ export function ITPricingModule() {
                                 </Button>
                             </CardContent>
                         </Card>
+                    </div>
+
+                    {/* Card de Propostas */}
+                    <div className="mt-16">
+                        <div className="text-center mb-8">
+                            <h3 className="text-3xl font-bold mb-4 font-[var(--font-heading)]">
+                                Gestão de Propostas
+                            </h3>
+                            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-[var(--font-body)]">
+                                Visualize, gerencie e acompanhe todas as suas propostas comerciais em um só lugar
+                            </p>
+                        </div>
+
+                        <div className="max-w-2xl mx-auto">
+                            <Card className="hover-lift gradient-card border-primary/10 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <CardHeader className="relative text-center">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center mb-6 mx-auto tech-glow">
+                                        <FileText className="h-10 w-10 text-white" />
+                                    </div>
+                                    <CardTitle className="text-2xl font-[var(--font-heading)]">Central de Propostas</CardTitle>
+                                    <CardDescription className="text-base font-[var(--font-body)]">
+                                        Acesse todas as propostas criadas, edite informações e gere PDFs profissionais
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="relative">
+                                    <ul className="space-y-3 text-sm text-muted-foreground font-[var(--font-body)] mb-6">
+                                        <li className="flex items-center justify-center">
+                                            <Shield className="w-4 h-4 mr-2 text-blue-600" /> Visualização completa de propostas
+                                        </li>
+                                        <li className="flex items-center justify-center">
+                                            <TrendingUp className="w-4 h-4 mr-2 text-blue-600" /> Edição de dados do cliente e projeto
+                                        </li>
+                                        <li className="flex items-center justify-center">
+                                            <BarChart3 className="w-4 h-4 mr-2 text-blue-600" /> Geração de PDF profissional
+                                        </li>
+                                        <li className="flex items-center justify-center">
+                                            <Zap className="w-4 h-4 mr-2 text-blue-600" /> Controle de status e acompanhamento
+                                        </li>
+                                    </ul>
+                                    <Button 
+                                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover-lift" 
+                                        onClick={() => setCurrentModule("proposals")}
+                                    >
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Acessar Propostas
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </section>

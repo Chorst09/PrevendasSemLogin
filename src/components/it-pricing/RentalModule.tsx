@@ -7,15 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { ModuleShortcuts } from "./ModuleShortcuts"
 import type { RentalItem } from "@/lib/types/pricing"
 import { pricingEngine } from "@/lib/utils/pricing-engine"
 import { useProposalStore } from "@/lib/stores/proposal-store"
 
 interface RentalModuleProps {
   onBack: () => void
+  onModuleChange?: (module: 'sales' | 'rental' | 'services') => void
 }
 
-export function RentalModule({ onBack }: RentalModuleProps) {
+export function RentalModule({ onBack, onModuleChange }: RentalModuleProps) {
   const { currentProposal, addBudgetToProposal } = useProposalStore()
   const [contractPeriod, setContractPeriod] = useState(12)
   const [desiredMargin, setDesiredMargin] = useState(20)
@@ -152,6 +154,14 @@ export function RentalModule({ onBack }: RentalModuleProps) {
       </div>
 
       <div className="px-6">
+        {/* Module Shortcuts */}
+        {onModuleChange && (
+          <ModuleShortcuts 
+            currentModule="rental" 
+            onModuleChange={onModuleChange}
+          />
+        )}
+
         {/* Module Tab */}
         <div className="flex justify-center mb-8">
           <div className="flex bg-muted rounded-lg p-1">
