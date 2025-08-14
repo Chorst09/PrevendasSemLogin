@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ArrowLeft, BarChart3, Users, Package, TrendingUp, DollarSign, FileText, Settings, Eye, Package2, UserCheck, Calendar } from "lucide-react"
+import { ConfigurationModule } from "./ConfigurationModule"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -292,20 +293,7 @@ export function AdminModule({ onBack }: AdminModuleProps) {
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações do Sistema</CardTitle>
-                <p className="text-sm text-muted-foreground">Regras de negócio e parâmetros do sistema</p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Painel de Configurações</h3>
-                  <p className="text-muted-foreground mb-4">Funcionalidade em desenvolvimento</p>
-                  <Button variant="outline">Acessar Configurações</Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ConfigurationModule />
           </TabsContent>
         </Tabs>
       </div>
